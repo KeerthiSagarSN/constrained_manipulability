@@ -3,6 +3,9 @@
 
 #include <visualization_msgs/Marker.h>
 
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <ros/ros.h>
+
 #include <constrained_manipulability/ObjectDistances.h>
 #include <constrained_manipulability/PolytopeMesh.h>
 #include <constrained_manipulability/PolytopeVolume.h>
@@ -13,7 +16,8 @@ namespace constrained_manipulability
 {
     ConstrainedManipulability::ConstrainedManipulability(ros::NodeHandle nh, std::string root, std::string tip, std::string robot_description,
                                                          double distance_threshold, double linearization_limit, double dangerfield)
-        : nh_(nh), fclInterface(nh), distance_threshold_(distance_threshold), dangerfield_(dangerfield), octomap_id_(-1)
+        : nh_(nh), fclInterface(nh), distance_threshold_(distance_threshold), dangerfield_(dangerfield),
+          listener_(buffer_), voxel_grid_received_(false), octomap_id_(-1), voxel_grid_id_(-2)
     {
         polytope_server_ = nh_.advertiseService("get_polytope_constraints", &ConstrainedManipulability::getPolytopeConstraintsCallback, this);
         jacobian_server_ = nh_.advertiseService("get_jacobian_matrix", &ConstrainedManipulability::getJacobianCallback, this);
@@ -22,6 +26,8 @@ namespace constrained_manipulability
         obj_dist_pub_ = nh_.advertise<constrained_manipulability::ObjectDistances>("constrained_manipulability/obj_distances", 1);
         poly_mesh_pub_ = nh_.advertise<constrained_manipulability::PolytopeMesh>("constrained_manipulability/polytope_mesh", 1);
         poly_vol_pub_ = nh_.advertise<constrained_manipulability::PolytopeVolume>("constrained_manipulability/polytope_volume", 1);
+
+        voxel_grid_sub_ = nh_.subscribe("voxel_grid", 1, &ConstrainedManipulability::gridCallback, this);
 
         octo_filter_ = new octomap_filter::OctomapFilter(nh_);
 
@@ -69,7 +75,6 @@ namespace constrained_manipulability
         std::vector<std::string> joint_names(ndof_);
         for (int i = 0; i < chain_.getNrOfSegments(); ++i)
         {
-
             KDL::Segment seg = chain_.getSegment(i);
             KDL::Joint kdl_joint = seg.getJoint();
             urdf::JointConstSharedPtr urdf_joint = model_.getJoint(kdl_joint.getName());
@@ -130,6 +135,19 @@ namespace constrained_manipulability
         }
     }
 
+    void ConstrainedManipulability::gridCallback(const costmap_2d::VoxelGridConstPtr &grid)
+    {
+        if (grid->data.empty())
+        {
+            ROS_ERROR("Received empty voxel grid");
+            return;
+        }
+
+        boost::mutex::scoped_lock lock(collision_world_mutex_);
+        voxel_grid_ = *grid;
+        voxel_grid_received_ = true;
+    }
+
     Polytope ConstrainedManipulability::getAllowableMotionPolytope(const sensor_msgs::JointState &joint_states,
                                                                    bool show_polytope,
                                                                    std::vector<double> color_pts,
@@ -138,7 +156,7 @@ namespace constrained_manipulability
         Eigen::MatrixXd AHrep;
         Eigen::VectorXd bhrep;
         Eigen::Vector3d offset_position;
-
+        ROS_INFO("Managed to come here");
         Polytope poly = getAllowableMotionPolytope(joint_states,
                                                    AHrep,
                                                    bhrep,
@@ -146,6 +164,8 @@ namespace constrained_manipulability
                                                    show_polytope,
                                                    color_pts,
                                                    color_line);
+        
+        
         return poly;
     }
 
@@ -157,6 +177,7 @@ namespace constrained_manipulability
                                                                    std::vector<double> color_line)
     {
         Eigen::Vector3d offset_position;
+        ROS_INFO("Managed to come here 2");
 
         Polytope poly = getAllowableMotionPolytope(joint_states,
                                                    AHrep,
@@ -176,13 +197,15 @@ namespace constrained_manipulability
                                                                    std::vector<double> color_pts,
                                                                    std::vector<double> color_line)
     {
+        
+        ROS_INFO("Managed to come here 3");
         Eigen::Affine3d base_T_ee;
         Eigen::Matrix<double, 6, Eigen::Dynamic> base_J_ee;
         KDL::JntArray kdl_joint_positions(ndof_);
 
         jointStatetoKDLJointArray(joint_states, kdl_joint_positions);
         getKDLKinematicInformation(kdl_joint_positions, base_T_ee, base_J_ee);
-
+        
         // Define Hyperplanes
         AHrep.resize(2 * ndof_, ndof_);
         AHrep.topRows(ndof_) = ndof_identity_matrix_;                 // ndof_*ndof block at row  0 colum 0;ndof_
@@ -194,25 +217,34 @@ namespace constrained_manipulability
         {
             bhrep(i) = max_lin_limit_[i];
             bhrep(i + ndof_) = -min_lin_limit_[i];
+            ROS_INFO("Counter running");
         }
-
+        ROS_INFO("Managed to come here 4");
         // Define offset position to end effector
         offset_position = base_T_ee.translation();
-
-        // Convert to V-representation polytope
+        //ROS_INFO("Managed to come here 5");
+        // Convert to V-representation polytope        
         Polytope vrep_polytope("allowable_motion_polytope", AHrep, bhrep);
+        
         // Transform to Cartesian Space
+        
         vrep_polytope.transformCartesian(base_J_ee.topRows(3), offset_position);
-
+        ROS_INFO("Managed to come here 11");
         if (show_polytope)
         {
+            
             plotPolytope(vrep_polytope, offset_position, color_pts, color_line);
+            ROS_INFO("Managed to come here 12");
         }
 
+        
         // Publish polytope volume
         constrained_manipulability::PolytopeVolume polytope_volume;
         polytope_volume.name = vrep_polytope.getName();
+        
+        // // Changed code here
         polytope_volume.volume = vrep_polytope.getVolume();
+        // polytope_volume.volume = 0;
         poly_vol_pub_.publish(polytope_volume);
 
         // Return the calculated polytope
@@ -299,6 +331,7 @@ namespace constrained_manipulability
         constrained_manipulability::PolytopeVolume polytope_volume;
         polytope_volume.name = vrep_polytope.getName();
         polytope_volume.volume = vrep_polytope.getVolume();
+        //polytope_volume.volume = 0.0;
         poly_vol_pub_.publish(polytope_volume);
 
         // Return the calculated polytope
@@ -359,10 +392,11 @@ namespace constrained_manipulability
             plotPolytope(vrep_polytope, offset_position, color_pts, color_line);
         }
 
-        // Publish polytope volume
+        //Publish polytope volume
         constrained_manipulability::PolytopeVolume polytope_volume;
         polytope_volume.name = vrep_polytope.getName();
         polytope_volume.volume = vrep_polytope.getVolume();
+        //polytope_volume.volume = 0;
         poly_vol_pub_.publish(polytope_volume);
 
         // Return the calculated polytope
@@ -436,12 +470,17 @@ namespace constrained_manipulability
                                                  std::vector<double> color_line) const
     {
         std::vector<geometry_msgs::Point> points;
-        constrained_manipulability::PolytopeMesh poly_mesh;
-        bool success = poly.getPolytopeMesh(offset_position, points, poly_mesh);
+        ROS_INFO("Managed to come here 12");
 
+        constrained_manipulability::PolytopeMesh poly_mesh;
+        ROS_INFO("Managed to come here 13");
+        bool success = poly.getPolytopeMesh(offset_position, points, poly_mesh);
+        //ROS_INFO("Managed to come here 16");
+        //ROS_INFO("Managed to come here 15");
         if (success)
-        {
+        {   
             visualization_msgs::Marker mkr;
+            
             mkr.ns = poly_mesh.name;
             mkr.action = visualization_msgs::Marker::ADD;
             mkr.type = visualization_msgs::Marker::TRIANGLE_LIST;
@@ -477,6 +516,7 @@ namespace constrained_manipulability
 
             mkr_pub_.publish(mkr);
         }
+        
 
         return success;
     }
@@ -541,7 +581,7 @@ namespace constrained_manipulability
 
                 if (obj_distances[j] < 0.0)
                 {
-                    // ROS_WARN ( " In collision" );
+                    // ROS_WARN ( "In collision" );
                     return false;
                 }
                 else if (obj_distances[j] < distance_threshold_)
@@ -698,7 +738,7 @@ namespace constrained_manipulability
 
             tf::matrixEigenToMsg(AHrep, res.polytope_hyperplanes[var].A);
             res.polytope_hyperplanes[var].b = constrained_manipulability::eigenToVector(bhrep);
-            res.polytope_hyperplanes[var].volume = poly.getVolume();
+            // res.polytope_hyperplanes[var].volume = poly.getVolume();
 
             server_return = true;
         }
@@ -754,6 +794,12 @@ namespace constrained_manipulability
     {
         boost::mutex::scoped_lock lock(collision_world_mutex_);
         return fclInterface.removeCollisionObject(object_id);
+    }
+
+    bool ConstrainedManipulability::removeVoxelGridObject(unsigned int object_id)
+    {
+        boost::mutex::scoped_lock lock(collision_world_mutex_);
+        return fclInterface.removeVoxelGridObject(object_id);
     }
 
     bool ConstrainedManipulability::displayObjects()
@@ -851,13 +897,14 @@ namespace constrained_manipulability
     {
         KDL::JntArray kdl_joint_positions(ndof_);
         jointStatetoKDLJointArray(joint_states, kdl_joint_positions);
-
+        
         GeometryInformation geometry_information;
+        
         getCollisionModel(kdl_joint_positions, geometry_information);
 
         std::vector<shapes::ShapeMsg> current_shapes;
         std::vector<geometry_msgs::Pose> shapes_poses;
-
+        
         convertCollisionModel(geometry_information, current_shapes, shapes_poses);
 
         boost::mutex::scoped_lock lock(collision_world_mutex_);
@@ -886,6 +933,33 @@ namespace constrained_manipulability
             fclInterface.removeCollisionObject(octomap_id_);
             // Update with the new
             fclInterface.addCollisionObject(octomap, octomap_pose_wrt_base, octomap_id_);
+        }
+
+        // If voxel grid is available, then add to collision world
+        if (voxel_grid_received_)
+        {
+            // Get the voxel grid properties, including its pose in the robot base frame
+            geometry_msgs::TransformStamped voxel_g_wrt_base;
+            try
+            {
+                voxel_g_wrt_base = buffer_.lookupTransform(
+                    base_link_,
+                    voxel_grid_.header.frame_id,
+                    ros::Time(0));
+            }
+            catch (const tf2::TransformException &ex)
+            {
+                ROS_ERROR("Error during transform: %s", ex.what());
+            }
+
+            Eigen::Affine3d voxel_g_pose_wrt_base;
+            tf::transformMsgToEigen(voxel_g_wrt_base.transform, voxel_g_pose_wrt_base);
+
+            // Remove the old voxel grid from the world
+            fclInterface.removeVoxelGridObject(voxel_grid_id_);
+            // Update with the new
+            fclInterface.addCollisionObject(voxel_grid_, voxel_g_pose_wrt_base, voxel_grid_id_);
+            voxel_grid_received_ = false;
         }
 
         for (int i = 0; i < geometry_information.geometry_transforms.size(); i++)
@@ -988,17 +1062,19 @@ namespace constrained_manipulability
         // Calculates the segment's collision geomtery
         // The transform to the origin of the collision geometry
         // The Jacobian matrix at the origin of the collision geometry
+        // Keerthi's changes I changed to chain_.getNrOfSegments()-1 ---> here... I dont know why,
         for (int i = 0; i < chain_.getNrOfSegments(); ++i)
         {
             KDL::Segment seg = chain_.getSegment(i); // Get current segment
 
             // Get Collision Geometry
             std::unique_ptr<shapes::Shape> shape = constructShape(model_.links_.at(seg.getName())->collision->geometry.get());
-
+            
             // Get Collision Origin
             Eigen::Vector3d origin_Trans_collision(model_.links_.at(seg.getName())->collision->origin.position.x,
                                                    model_.links_.at(seg.getName())->collision->origin.position.y,
                                                    model_.links_.at(seg.getName())->collision->origin.position.z);
+            
             Eigen::Quaterniond origin_Quat_collision(
                 model_.links_.at(seg.getName())->collision->origin.rotation.w,
                 model_.links_.at(seg.getName())->collision->origin.rotation.x,
@@ -1020,7 +1096,9 @@ namespace constrained_manipulability
             geometry_information.shapes.push_back(std::move(shape));
             geometry_information.geometry_transforms.push_back(base_T_collision_origin);
             geometry_information.geometry_jacobians.push_back(base_J_collision_origin);
+            ROS_INFO("Trying here 1");
         }
+        
     }
 
     bool ConstrainedManipulability::projectTranslationalJacobian(Eigen::Vector3d nT,

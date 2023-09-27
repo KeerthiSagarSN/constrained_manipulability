@@ -1,7 +1,9 @@
+#define PCL_NO_PRECOMPILE
 #include <eigen-cddlib/Polyhedron.h>
 
 #include <pcl/point_types.h>
 #include <pcl/surface/concave_hull.h>
+
 
 #include <ros/ros.h>
 
@@ -32,7 +34,9 @@ namespace constrained_manipulability
             AHrep_ = hrep.first;
             bHrep_ = hrep.second;
 
+            // Commented below to remove error
             volume_ = computeVolume();
+            //volume_ = 0.0;
         }
         catch (...)
         {
@@ -44,18 +48,22 @@ namespace constrained_manipulability
         : name_(polytope_name), AHrep_(A_left), bHrep_(b_left)
     {
         // Convert from H rep to V rep
+        ROS_INFO("Managed to come here 6");
         Eigen::Polyhedron Poly;
         try
         {
             Poly.setHrep(A_left, b_left);
             auto vrep = Poly.vrep();
             vertex_set_ = vrep.first;
+            ROS_INFO("Managed to come here 7");
 
             volume_ = computeVolume();
+            //volume_ = 0.0;
+            
 
             if (vertex_set_.rows() <= 0)
             {
-                // ROS_INFO("V representation has no rows");
+                ROS_INFO("V representation has no rows");
             }
         }
         catch (...)
@@ -71,31 +79,45 @@ namespace constrained_manipulability
             return 0.0;
         }
 
+        
+
         PointCloudPtr cloud_hull(new PointCloud);
         PointCloudPtr cloud_projected(new PointCloud);
 
         // Use PCL for the convex hull interface to qhull
+        //std::cout<<"\nvertex set is" << vertex_set_;
+        //std::cout<<"\nvertex set is" << vertex_set_.rows();
         for (int var = 0; var < vertex_set_.rows(); ++var)
         {
             pcl::PointXYZ p(vertex_set_(var, 0),
                             vertex_set_(var, 1),
                             vertex_set_(var, 2));
+            // std::cout<<"\nvertex set x is" << vertex_set_(var, 0);
+            // std::cout<<"\nvertex set y is" << vertex_set_(var, 1);
+            // std::cout<<"\nvertex set z is" << vertex_set_(var, 2);
             cloud_projected->points.push_back(p);
         }
 
         pcl::ConvexHull<pcl::PointXYZ> chull;
         std::vector<pcl::Vertices> polygons;
+        
         try
         {
             chull.setComputeAreaVolume(true);
-            chull.setInputCloud(cloud_projected);
-            chull.reconstruct(*cloud_hull, polygons);
+            
+            chull.setInputCloud(cloud_projected);            
+            // Major error here because of reconstruct
+            chull.reconstruct(*cloud_hull,polygons);
+            
+            ROS_INFO("Managed to come here 10");
         }
         catch (...)
         {
-            ROS_ERROR("qhull error");
+            ROS_INFO("Soething is wrong");
+            ROS_ERROR("qhull error");            
             return 0.0;
         }
+        
 
         return chull.getTotalVolume();
     }
@@ -125,6 +147,7 @@ namespace constrained_manipulability
         try
         {
             chull.setInputCloud(cloud_projected);
+            ROS_INFO("Managed to come here 14");
             chull.reconstruct(*cloud_hull, polygons);
         }
         catch (...)
@@ -210,6 +233,8 @@ namespace constrained_manipulability
         vertex_set_ = V;
 
         // Changing state, so make sure to re-compute volume
+        // Remove error
+        //volume_ = 0.0;
         volume_ = computeVolume();
     }
 

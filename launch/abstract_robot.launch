@@ -1,8 +1,8 @@
 <launch>
     <arg name="config" default="example_scene1" />
-    <arg name="root_link" default="base" />
-    <arg name="tip_link" default="ee" />
-    <arg name="mp_display" default="false" />
+    <arg name="root_link" default="base_link" />
+    <arg name="tip_link" default="wrist_3_link" />
+    <arg name="mp_display" default="true" />
     <arg name="cmp_display" default="true" />
 
     <node name="abstract_robot_test" pkg="constrained_manipulability" type="abstract_robot_test" respawn="false" output="screen" clear_params="true" launch-prefix="">

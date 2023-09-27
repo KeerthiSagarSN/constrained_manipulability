@@ -95,13 +95,15 @@ int main(int argc, char **argv)
         if (joint_state_received == true)
         {
             joint_state_received = false;
-
+            
             constrained_manip.checkCollision(joint_state);
+            ROS_INFO("Trying here");
             constrained_manipulability::Polytope allowable_poly = constrained_manip.getAllowableMotionPolytope(
                 joint_state,
                 show_mp,
                 {0.0, 0.0, 0.5, 0.0},
                 {0.0, 0.0, 1.0, 0.4});
+            
             constrained_manipulability::Polytope constrained_motion_poly = constrained_manip.getConstrainedAllowableMotionPolytope(
                 joint_state,
                 show_cmp,

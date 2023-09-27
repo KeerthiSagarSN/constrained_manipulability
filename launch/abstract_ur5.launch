@@ -1,0 +1,27 @@
+<launch>
+    <include file="$(find ur_description)/launch/view_ur5.launch" />
+
+    <node pkg="joint_state_publisher_gui" type="joint_state_publisher_gui" name="joint_state_publisher_gui" output="screen">
+        <rosparam param="source_list">["alternative_input/joint_states"]</rosparam>
+        <rosparam>
+          zeros:
+            shoulder_pan_joint: 0.47
+            shoulder_lift_joint: -1.47
+            elbow_joint: 1.56
+            wrist_1_joint: 0.57
+            wrist_2_joint: 0.35
+            wrist_3_joint: 1.57
+        </rosparam>
+    </node>
+
+    <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" /> 
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find constrained_manipulability)/rviz/octomap_robot.rviz" />
+    <include file="$(find constrained_manipulability)/launch/abstract_robot.launch">
+        <arg name="root_link" value="base_link" />
+        <arg name="tip_link" value="wrist_3_link" />
+        <arg name="config" value="example_scene_ur3" />
+        <arg name="mp_display" default="true" />
+        <arg name="cmp_display" default="true" />
+    </include>
+
+</launch>
