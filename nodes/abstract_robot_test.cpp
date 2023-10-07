@@ -30,19 +30,23 @@ int main(int argc, char **argv)
 
     ros::NodeHandle nh; // Create a node handle and start the node
 
-    ros::Subscriber joint_sub = nh.subscribe("/joint_states", 1, &jointSensorCallback);
+    // ros::Subscriber joint_sub = nh.subscribe("/joint_states", 1, &jointSensorCallback);
 
-    std::string root, tip;
+    std::string kdl_chain_filename, root, tip,joint_state_topic_name;
     std::vector<int> object_primitive;
     std::vector<std::vector<double>> obj_dimensions;
     std::vector<std::vector<double>> obj_poses;
     std::vector<shape_msgs::SolidPrimitive> shapes_in;
     constrained_manipulability::TransformVector shapes_pose;
     robot_collision_checking::FCLObjectSet objects;
-    bool show_mp, show_cmp;
+    bool fetch_param_server,show_mp, show_cmp;
 
+
+    constrained_manipulability::getParameter("~/fetch_param_server", fetch_param_server);
+    constrained_manipulability::getParameter("~/kdl_chain_filename", kdl_chain_filename);
     constrained_manipulability::getParameter("~/root", root);
     constrained_manipulability::getParameter("~/tip", tip);
+    constrained_manipulability::getParameter("~/joint_state_topic_name", joint_state_topic_name);
     constrained_manipulability::getParameter("~/show_mp", show_mp);
     constrained_manipulability::getParameter("~/show_cmp", show_cmp);
     constrained_manipulability::getVectorParam("~/object_primitive", object_primitive);
@@ -54,9 +58,15 @@ int main(int argc, char **argv)
                                                    shapes_in,
                                                    shapes_pose);
 
-    constrained_manipulability::ConstrainedManipulability constrained_manip(nh, root, tip);
+    ros::Subscriber joint_sub = nh.subscribe(joint_state_topic_name, 1, &jointSensorCallback);
 
-    bool use_static_functions(false);
+    constrained_manipulability::ConstrainedManipulability constrained_manip(nh,
+                                                                            fetch_param_server,
+                                                                            kdl_chain_filename,
+                                                                            root, tip,
+                                                                            joint_state_topic_name);
+
+    bool use_static_functions(true);
 
     // TEST FOR STATIC FUNCTIONS
     KDL::Tree my_tree_;
@@ -66,6 +76,8 @@ int main(int argc, char **argv)
 
     if (use_static_functions)
     {
+        if (fetch_param_server)
+        {
         nh.param("robot_description", robot_desc_string, std::string());
         model_.initParamWithNodeHandle("robot_description", nh);
         if (!kdl_parser::treeFromString(robot_desc_string, my_tree_))
@@ -76,9 +88,25 @@ int main(int argc, char **argv)
         {
             ROS_INFO("Success");
         }
+
+        }
+        else
+        {
+            ROS_INFO("Loading URDF From File");
+            if (!kdl_parser::treeFromFile(kdl_chain_filename, my_tree_))
+            {
+                ROS_ERROR("Failed to construct kdl tree");
+            }
+            else
+            {
+                ROS_INFO("Success");
+            }
+            
+        }
         my_tree_.getChain(root,
-                          tip,
-                          chain_);
+                    tip,
+                    chain_);
+        
     }
     objects.resize(shapes_in.size());
     for (int i = 0; i < shapes_in.size(); ++i)
@@ -131,7 +159,7 @@ int main(int argc, char **argv)
         }
 
         ros::spinOnce();
-        ros::Duration(0.001).sleep();
+        ros::Duration(0.0001).sleep();
     }
     return 0;
 }

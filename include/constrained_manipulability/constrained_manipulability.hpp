@@ -166,8 +166,11 @@ namespace constrained_manipulability
 
         public:
             ConstrainedManipulability(ros::NodeHandle nh,
+                                    bool fetch_param_server,
+                                    std::string kdl_chain_filename,
                                     std::string root,
                                     std::string tip,
+                                    std::string joint_state_topic_name,
                                     std::string robot_description = "robot_description",
                                     double distance_threshold = 0.3,
                                     double linearization_limit = 0.1,

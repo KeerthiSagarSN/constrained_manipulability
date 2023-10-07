@@ -14,8 +14,7 @@
 
 namespace constrained_manipulability
 {
-    ConstrainedManipulability::ConstrainedManipulability(ros::NodeHandle nh, std::string root, std::string tip, std::string robot_description,
-                                                         double distance_threshold, double linearization_limit, double dangerfield)
+    ConstrainedManipulability::ConstrainedManipulability(ros::NodeHandle nh, bool fetch_param_server, std::string kdl_chain_filename, std::string root, std::string tip, std::string joint_state_topic_name, std::string robot_description, double distance_threshold, double linearization_limit, double dangerfield)
         : nh_(nh), fclInterface(nh), distance_threshold_(distance_threshold), dangerfield_(dangerfield),
           listener_(buffer_), voxel_grid_received_(false), octomap_id_(-1), voxel_grid_id_(-2)
     {
@@ -35,9 +34,24 @@ namespace constrained_manipulability
         nh_.param(robot_description, robot_desc_string, std::string());
         model_.initParamWithNodeHandle(robot_description, nh);
 
+        if(fetch_param_server)
+        {
         if (!kdl_parser::treeFromString(robot_desc_string, my_tree_))
         {
             ROS_ERROR("Failed to construct kdl tree");
+        }
+        }
+        else
+        {
+            ROS_INFO("Loading URDF From File");
+            if (!kdl_parser::treeFromFile(kdl_chain_filename, my_tree_))
+            {
+                ROS_ERROR("Failed to construct kdl tree");
+            }
+            else
+            {
+                ROS_INFO("Success");
+            }
         }
 
         base_link_ = root;
@@ -47,7 +61,15 @@ namespace constrained_manipulability
 
         ndof_ = chain_.getNrOfJoints();
 
+        if(fetch_param_server)
+        {
         ROS_INFO_STREAM("Loading tree from parameter " << robot_description << " with kinematic chain from " << root << " to " << tip);
+        }
+        else
+        {
+        ROS_INFO_STREAM("Loading tree from URDF FILE " << kdl_chain_filename << " with kinematic chain from " << root << " to " << tip);
+
+        }
         ROS_INFO_STREAM("Number of tree segments_= " << my_tree_.getNrOfSegments());
         ROS_INFO_STREAM("Number of tree joints= " << my_tree_.getNrOfJoints());
         ROS_INFO_STREAM("Number of chain joints= " << chain_.getNrOfJoints());

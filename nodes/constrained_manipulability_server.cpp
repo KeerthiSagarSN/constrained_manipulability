@@ -25,13 +25,22 @@ int main(int argc, char **argv)
 
     ros::Subscriber joint_sub = nh.subscribe("/joint_states", 10, &jointSensorCallback);
 
-    std::string root, tip, robot_desc;
+    std::string kdl_chain_filename, joint_state_topic_name, root, tip, robot_desc;
+    bool fetch_param_server;
 
+
+    constrained_manipulability::getParameter("~/fetch_param_server", fetch_param_server);
+    constrained_manipulability::getParameter("~/kdl_chain_filename", kdl_chain_filename);
     constrained_manipulability::getParameter("~/root", root);
     constrained_manipulability::getParameter("~/tip", tip);
+    constrained_manipulability::getParameter("~/joint_state_topic_name", joint_state_topic_name);
     constrained_manipulability::getParameter("~/robot_desc", robot_desc);
 
-    constrained_manipulability::ConstrainedManipulability constrained_manip(nh, root, tip, robot_desc);
+    constrained_manipulability::ConstrainedManipulability constrained_manip(nh,
+                                                                        fetch_param_server,
+                                                                        kdl_chain_filename,
+                                                                        root, tip,
+                                                                        joint_state_topic_name,robot_desc);
 
     // Loop with 100 Hz rate
     ros::Rate loop_rate(100);

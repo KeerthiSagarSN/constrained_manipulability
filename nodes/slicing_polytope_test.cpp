@@ -32,18 +32,21 @@ int main(int argc, char **argv)
 
     ros::Publisher joint_pub = nh.advertise<sensor_msgs::JointState>("joint_states", 1);
 
-    std::string root, tip;
+    std::string kdl_chain_filename, joint_state_topic_name, root, tip;
     std::vector<int> object_primitive;
     std::vector<std::vector<double>> obj_dimensions;
     std::vector<std::vector<double>> obj_poses;
     std::vector<shape_msgs::SolidPrimitive> shapes_in;
     constrained_manipulability::TransformVector shapes_pose;
     robot_collision_checking::FCLObjectSet objects;
-    bool show_cmp, debug_statements;
+    bool fetch_param_server, show_cmp, debug_statements;
 
+    constrained_manipulability::getParameter("~/fetch_param_server", fetch_param_server);
+    constrained_manipulability::getParameter("~/kdl_chain_filename", kdl_chain_filename);
     constrained_manipulability::getParameter("~/debug_statements", debug_statements);
     constrained_manipulability::getParameter("~/root", root);
     constrained_manipulability::getParameter("~/tip", tip);
+    constrained_manipulability::getParameter("~/joint_state_topic_name", joint_state_topic_name);
     constrained_manipulability::getParameter("~/show_cmp", show_cmp);
     constrained_manipulability::getVectorParam("~/object_primitive", object_primitive);
     constrained_manipulability::getVectorVectorParam("~/object_dimensions", obj_dimensions);
@@ -54,7 +57,11 @@ int main(int argc, char **argv)
                                                    shapes_in,
                                                    shapes_pose);
 
-    constrained_manipulability::ConstrainedManipulability constrained_manip(nh, root, tip);
+    constrained_manipulability::ConstrainedManipulability constrained_manip(nh,
+                                                                        fetch_param_server,
+                                                                        kdl_chain_filename,
+                                                                        root, tip,
+                                                                        joint_state_topic_name);
 
     ROS_INFO("Adding Objects");
     objects.resize(shapes_in.size());
