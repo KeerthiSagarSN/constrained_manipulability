@@ -20,6 +20,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   message_generation
   octomap_filter
+  jsk_recognition_msgs  
 )
 
 
@@ -47,6 +48,7 @@ generate_messages(
   std_msgs
   shape_msgs
   sensor_msgs
+  geometry_msgs
 )
 
 
@@ -87,6 +89,9 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} ${EIGEN_CDDLIB_LIB} ${
 
 add_executable(abstract_robot_test nodes/abstract_robot_test.cpp)
 target_link_libraries(abstract_robot_test ${catkin_LIBRARIES} ${PROJECT_NAME})
+
+add_executable(intersect_polytope_test nodes/intersect_polytope_test.cpp)
+target_link_libraries(intersect_polytope_test ${catkin_LIBRARIES} ${Boost_LIBRARIES} ${PROJECT_NAME})
 
 add_executable(constrained_manipulability_server nodes/constrained_manipulability_server.cpp)
 target_link_libraries(constrained_manipulability_server ${catkin_LIBRARIES} ${PROJECT_NAME})

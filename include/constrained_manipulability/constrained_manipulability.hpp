@@ -56,6 +56,8 @@
 #include <constrained_manipulability/GetPolytopeConstraints.h>
 #include <constrained_manipulability/GetJacobianMatrix.h>
 
+#include <jsk_recognition_msgs/PolygonArray.h>
+
 namespace constrained_manipulability
 {
     /// GeometryInformation contains all geomertic information obtained from chain
@@ -101,6 +103,7 @@ namespace constrained_manipulability
             double dangerfield_;
 
             KDL::Tree my_tree_;
+            
             KDL::Chain chain_;
             urdf::Model model_;
             boost::scoped_ptr<KDL::ChainJntToJacSolver> kdl_dfk_solver_;
@@ -118,6 +121,7 @@ namespace constrained_manipulability
 
             // ROS server fcl_interface
             ros::ServiceServer polytope_server_;
+            ros::Publisher jacobian_offset_publisher_;
             bool getPolytopeConstraintsCallback(constrained_manipulability::GetPolytopeConstraints::Request &req,
                                                 constrained_manipulability::GetPolytopeConstraints::Response &res);
 
@@ -128,10 +132,17 @@ namespace constrained_manipulability
             // ROS publishers
             ros::Publisher mkr_pub_;
             ros::Publisher obj_dist_pub_;
-            ros::Publisher poly_mesh_pub_;
+            ros::Publisher poly_mesh_allowable_pub1_;
+            ros::Publisher poly_mesh_cmp_pub1_;
             ros::Publisher poly_vol_pub_;
+            ros::Publisher PolyHyperplaneAllowable_pub_;
+            ros::Publisher PolyHyperplaneConstrained_pub_;
+            ros::Publisher PolyHyperplaneVelocity_pub_;
+        
             // Voxel grid subscriber
             ros::Subscriber voxel_grid_sub_;
+        
+
 
             /// Convert a joint state message to a KDL joint array based on segment names
             void jointStatetoKDLJointArray(const sensor_msgs::JointState &joint_states,
@@ -139,6 +150,7 @@ namespace constrained_manipulability
             /// Statically convert a joint state message to a KDL joint array based on segment names
             static void jointStatetoKDLJointArray(KDL::Chain &chain, const sensor_msgs::JointState &joint_states,
                                                 KDL::JntArray &kdl_joint_positions);
+
 
             /** This function is taken from https://github.com/tu-darmstadt-ros-pkg with a tiny change to smart ptrs
              * https://github.com/tu-darmstadt-ros-pkg/robot_self_filter/blob/master/src/self_mask.cpp#L76
@@ -149,6 +161,8 @@ namespace constrained_manipulability
             void getKDLKinematicInformation(const KDL::JntArray &kdl_joint_positions,
                                             Eigen::Affine3d &T,
                                             Eigen::Matrix<double, 6, Eigen::Dynamic> &Jac, int segment = -1);
+
+
 
             /** getCollisionModel returns  kinematic information about collision geometry
              * For ith link (segment) in the kinematic serial chain, we return
@@ -166,6 +180,7 @@ namespace constrained_manipulability
 
         public:
             ConstrainedManipulability(ros::NodeHandle nh,
+                                    std::string robot_namespace_suffix,
                                     bool fetch_param_server,
                                     std::string kdl_chain_filename,
                                     std::string root,
@@ -180,6 +195,8 @@ namespace constrained_manipulability
 
             // Voxel grid callback function
             void gridCallback(const costmap_2d::VoxelGridConstPtr &grid);
+            void AHrepCallback(const std_msgs::Float64MultiArray::ConstPtr &AHrepmsg);
+            void bHrepCallback(const std_msgs::Float64MultiArray::ConstPtr &msg);
 
             /// Add a solid primitive object to FCLInterface collision world transform w.r.t base_link of chain
             bool addCollisionObject(const shape_msgs::SolidPrimitive &s1,
@@ -213,6 +230,10 @@ namespace constrained_manipulability
             /// Convenience function to get end-effector pose as a geometry_msgs::Pose
             void getCartPos(const sensor_msgs::JointState &joint_states,
                             geometry_msgs::Pose &geo_pose);
+            static bool staticplotPolytope(const Polytope &poly,
+                                                 const Eigen::Vector3d &offset_position,
+                                                 std::vector<double> &color_pts,
+                                                 std::vector<double> &color_line,ros::Publisher& mrkr_publisher);
 
             /** getAllowableMotionPolytope returns the polytope
              *   considering     linearization
@@ -322,6 +343,105 @@ namespace constrained_manipulability
                                                            std::vector<double> color_pts,
                                                            std::vector<double> color_line);
 
+
+            Polytope getAllowableMotionPolytopeIntersection(const sensor_msgs::JointState &joint_states,
+                                                bool show_polytope,
+                                                std::vector<double> color_pts = {0.0, 0.0, 0.5, 0.0},
+                                                std::vector<double> color_line = {0.0, 0.0, 1.0, 0.4});
+
+            /** getAllowableMotionPolytope returns the polytope
+             *   considering   linearization
+             *
+             *  AHrep hyperplanes of the allowable motion polytope
+             *  bHrep shifted distance
+             *  const sensor_msgs::JointState & joint_states, current joint states
+             *  show_polytope -> plots the polytope in rviz
+             *  color_pts -> polytope points color
+             *  color_line  -> polytope lines color
+             *  returns the allowable motion polytope
+             */
+            Polytope getAllowableMotionPolytopeIntersection(const sensor_msgs::JointState &joint_states,
+                                                Eigen::MatrixXd &AHrep,
+                                                Eigen::VectorXd &bhrep,
+                                                bool show_polytope,
+                                                std::vector<double> color_pts = {0.0, 0.0, 0.5, 0.0},
+                                                std::vector<double> color_line = {0.0, 0.0, 1.0, 0.4});
+
+            /** getAllowableMotionPolytope returns the polytope
+             *   considering   linearization
+             *
+             *  AHrep hyperplanes of the allowable motion polytope
+             *  bHrep shifted distance
+             *  Eigen::MatrixXd & Vset, the cartesian V representation of polytope
+             *  Eigen::Vector3d & offset_position the position we translate the polytopte to
+             *  const sensor_msgs::JointState & joint_states, current joint states
+             *  show_polytope -> plots the polytope in rviz
+             *  color_pts -> polytope points color
+             *  color_line  -> polytope lines color
+             *  returns the allowable motion polytope
+             */
+            Polytope getAllowableMotionPolytopeIntersection(const sensor_msgs::JointState &joint_states,
+                                                Eigen::MatrixXd &AHrep,
+                                                Eigen::VectorXd &bhrep,
+                                                Eigen::Vector3d &offset_position,
+                                                bool show_polytope,
+                                                std::vector<double> color_pts,
+                                                std::vector<double> color_line);
+
+            /** getConstrainedAllowableMotionPolytope returns the polytope
+             *   approximating the constrained allowable end effector motion, considering
+             *  joint limits and objstacles & linearization
+             *
+             *  const sensor_msgs::JointState & joint_states, current joint states
+             *  show_polytope -> plots the polytope in rviz
+             *  color_pts -> polytope points color
+             *  color_line  -> polytope lines color
+             *  returns the constrained allowable end effector motion polytope
+             */
+            Polytope getConstrainedAllowableMotionPolytopeIntersection(const sensor_msgs::JointState &joint_states,
+                                                           bool show_polytope,
+                                                           std::vector<double> color_pts = {0.0, 0.0, 0.5, 0.0},
+                                                           std::vector<double> color_line = {1.0, 0.0, 0.0, 0.4});
+
+            /** getConstrainedAllowableMotionPolytope returns the polytope
+             *   approximating the constrained allowable end effector motion, considering
+             *  joint limits and objstacles & linearization
+             *
+             *  AHrep hyperplanes of the constrained allowable motion polytope
+             *  bHrep shifted distance
+             *  const sensor_msgs::JointState & joint_states, current joint states
+             *  show_polytope -> plots the polytope in rviz
+             *  color_pts -> polytope points color
+             *  color_line  -> polytope lines color
+             *  returns the constrained allowable motion polytope
+             */
+            Polytope getConstrainedAllowableMotionPolytopeIntersection(const sensor_msgs::JointState &joint_states,
+                                                           Eigen::MatrixXd &AHrep,
+                                                           Eigen::VectorXd &bhrep,
+                                                           bool show_polytope,
+                                                           std::vector<double> color_pts = {0.0, 0.0, 0.5, 0.0},
+                                                           std::vector<double> color_line = {1.0, 0.0, 0.0, 0.4});
+
+            /** getConstrainedAllowableMotionPolytope returns the polytope
+             *   approximating the constrained allowable end effector motion, considering
+             *  joint limits and objstacles & linearization
+             *
+             *  AHrep hyperplanes of the constrained allowable motion polytope
+             *  bHrep shifted distance
+             *  offset_position the location in space of the Cartesian polytope
+             *  const sensor_msgs::JointState & joint_states, current joint states
+             *  show_polytope -> plots the polytope in rviz
+             *  color_pts -> polytope points color
+             *  color_line  -> polytope lines color
+             *  returns the constrained allowable motion polytope
+             */
+            Polytope getConstrainedAllowableMotionPolytopeIntersection(const sensor_msgs::JointState &joint_states,
+                                                           Eigen::MatrixXd &AHrep,
+                                                           Eigen::VectorXd &bhrep,
+                                                           Eigen::Vector3d &offset_position,
+                                                           bool show_polytope,
+                                                           std::vector<double> color_pts,
+                                                           std::vector<double> color_line);
             /** getVelocityPolytope returns the manipulability polytope
              *   considering joint velocity limits
              *
@@ -562,6 +682,17 @@ namespace constrained_manipulability
                                         urdf::Model &model,
                                         const KDL::JntArray &kdl_joint_positions,
                                         GeometryInformation &geometry_information);
+
+            // Convenience Static function to convert kdl to eigen stuff, segment=-1 returns terminal point information
+            static void getKDLKinematicInformationStatic(const KDL::JntArray &kdl_joint_positions,
+                                Eigen::Affine3d &T,
+                                Eigen::Matrix<double, 6, Eigen::Dynamic> &Jac, unsigned int &ndof_input,
+                                std::shared_ptr<KDL::ChainJntToJacSolver> &kdl_dfk_solver, 
+                                    std::shared_ptr<KDL::ChainFkSolverPos_recursive> &kdl_fk_solver, int segment = -1);
+
+            /// Statically convert a joint state message to a KDL joint array based on segment names
+            static void jointStatetoKDLJointArrayStatic(const KDL::Chain &chain1, sensor_msgs::JointState &joint_states,
+                                                KDL::JntArray &kdl_joint_positions);
 
             /// Function to return Jaocbian matrix to external users of library based on a joint state
             void getJacobian(const sensor_msgs::JointState &joint_states, Eigen::Matrix<double, 6, Eigen::Dynamic> &Jac);

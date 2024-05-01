@@ -26,13 +26,15 @@ void jointSensorCallback(const sensor_msgs::JointState::ConstPtr &msg)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "abstract_robot_test");
+    ros::init(argc, argv, "abstract_robot_test",
+            ros::init_options::AnonymousName);
 
     ros::NodeHandle nh; // Create a node handle and start the node
 
     // ros::Subscriber joint_sub = nh.subscribe("/joint_states", 1, &jointSensorCallback);
 
     std::string kdl_chain_filename, root, tip,joint_state_topic_name;
+    std::string robot_namespace_suffix;
     std::vector<int> object_primitive;
     std::vector<std::vector<double>> obj_dimensions;
     std::vector<std::vector<double>> obj_poses;
@@ -41,7 +43,7 @@ int main(int argc, char **argv)
     robot_collision_checking::FCLObjectSet objects;
     bool fetch_param_server,show_mp, show_cmp;
 
-
+    constrained_manipulability::getParameter("~/robot_namespace_suffix", robot_namespace_suffix);
     constrained_manipulability::getParameter("~/fetch_param_server", fetch_param_server);
     constrained_manipulability::getParameter("~/kdl_chain_filename", kdl_chain_filename);
     constrained_manipulability::getParameter("~/root", root);
@@ -59,14 +61,16 @@ int main(int argc, char **argv)
                                                    shapes_pose);
 
     ros::Subscriber joint_sub = nh.subscribe(joint_state_topic_name, 1, &jointSensorCallback);
+    
 
     constrained_manipulability::ConstrainedManipulability constrained_manip(nh,
+                                                                            robot_namespace_suffix,
                                                                             fetch_param_server,
                                                                             kdl_chain_filename,
                                                                             root, tip,
                                                                             joint_state_topic_name);
 
-    bool use_static_functions(true);
+    bool use_static_functions(false);
 
     // TEST FOR STATIC FUNCTIONS
     KDL::Tree my_tree_;
@@ -106,6 +110,9 @@ int main(int argc, char **argv)
         my_tree_.getChain(root,
                     tip,
                     chain_);
+        ROS_INFO("get_chain",my_tree_.getChain(root,
+                    tip,
+                    chain_));
         
     }
     objects.resize(shapes_in.size());
@@ -137,25 +144,26 @@ int main(int argc, char **argv)
                 show_cmp,
                 {0.0, 0.0, 0.5, 0.0},
                 {1.0, 0.0, 0.0, 0.4});
-            constrained_manipulability::Polytope vel_poly = constrained_manip.getVelocityPolytope(
-                joint_state, false);
-            constrained_manipulability::Polytope constrained_vel_poly = constrained_manip.getConstrainedVelocityPolytope(
-                joint_state, false);
+                
+            // constrained_manipulability::Polytope vel_poly = constrained_manip.getVelocityPolytope(
+            //     joint_state, false);
+            // constrained_manipulability::Polytope constrained_vel_poly = constrained_manip.getConstrainedVelocityPolytope(
+            //     joint_state, false);
 
-            if (use_static_functions)
-            {
+            // if (use_static_functions)
+            // {
 
-                Eigen::MatrixXd A;
-                Eigen::VectorXd b;
-                allowable_poly = constrained_manipulability::ConstrainedManipulability::
-                    getAllowableMotionPolytope(chain_, model_, joint_state, A, b);
-                constrained_motion_poly = constrained_manipulability::ConstrainedManipulability::
-                    getConstrainedAllowableMotionPolytope(chain_, model_, objects, joint_state, A, b);
-                vel_poly = constrained_manipulability::ConstrainedManipulability::
-                    getVelocityPolytope(chain_, model_, joint_state, A, b);
-                constrained_vel_poly = constrained_manipulability::ConstrainedManipulability::
-                    getConstrainedVelocityPolytope(chain_, model_, objects, joint_state, A, b);
-            }
+            //     Eigen::MatrixXd A;
+            //     Eigen::VectorXd b;
+            //     allowable_poly = constrained_manipulability::ConstrainedManipulability::
+            //         getAllowableMotionPolytope(chain_, model_, joint_state, A, b);
+            //     constrained_motion_poly = constrained_manipulability::ConstrainedManipulability::
+            //         getConstrainedAllowableMotionPolytope(chain_, model_, objects, joint_state, A, b);
+            //     // vel_poly = constrained_manipulability::ConstrainedManipulability::
+            //     //     getVelocityPolytope(chain_, model_, joint_state, A, b);
+            //     // constrained_vel_poly = constrained_manipulability::ConstrainedManipulability::
+            //     //     getConstrainedVelocityPolytope(chain_, model_, objects, joint_state, A, b);
+            // }
         }
 
         ros::spinOnce();

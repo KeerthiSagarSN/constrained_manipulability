@@ -10,9 +10,9 @@
     <arg name="cmp_display" default="true" />
     
 
-    <node name="$(anon abstract_robot_test)" pkg="constrained_manipulability" type="abstract_robot_test" respawn="false" output="screen" clear_params="true" launch-prefix="">
+    <node name="abstract_robot_test_1" pkg="constrained_manipulability" type="abstract_robot_test" respawn="false" output="screen" clear_params="true" launch-prefix="">
         <rosparam file="$(find constrained_manipulability)/scene_config/$(arg config).yaml" command="load" />
-        <param name="robot_namespace_suffix" type="string" value="$(arg robot_namespace)" />
+        <param name="robot_namespace_suffix" type="int" value="$(arg robot_namespace)" />
         <param name="fetch_param_server" type="bool" value="$(arg fetch_robot_description_parameter_server)" />
         <param name="kdl_chain_filename" type="string" value="$(arg urdf_chain)" />
         <param name="root" type="string" value="$(arg root_link)" />

@@ -18,7 +18,7 @@ void jointSensorCallback(const sensor_msgs::JointState::ConstPtr &msg)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "constrained_manipulability_server");
+    ros::init(argc, argv, "constrained_manipulability_server",ros::init_options::AnonymousName);
     std::srand(std::time(nullptr));
 
     ros::NodeHandle nh; // Create a node handle and start the node
@@ -27,8 +27,9 @@ int main(int argc, char **argv)
 
     std::string kdl_chain_filename, joint_state_topic_name, root, tip, robot_desc;
     bool fetch_param_server;
+    std::string robot_namespace_suffix;
 
-
+    constrained_manipulability::getParameter("~/robot_namespace_suffix", robot_namespace_suffix);
     constrained_manipulability::getParameter("~/fetch_param_server", fetch_param_server);
     constrained_manipulability::getParameter("~/kdl_chain_filename", kdl_chain_filename);
     constrained_manipulability::getParameter("~/root", root);
@@ -37,13 +38,14 @@ int main(int argc, char **argv)
     constrained_manipulability::getParameter("~/robot_desc", robot_desc);
 
     constrained_manipulability::ConstrainedManipulability constrained_manip(nh,
+                                                                        robot_namespace_suffix,
                                                                         fetch_param_server,
                                                                         kdl_chain_filename,
                                                                         root, tip,
                                                                         joint_state_topic_name,robot_desc);
 
     // Loop with 100 Hz rate
-    ros::Rate loop_rate(100);
+    ros::Rate loop_rate(1000);
     while (ros::ok())
     {
         if (joint_state_received == true)

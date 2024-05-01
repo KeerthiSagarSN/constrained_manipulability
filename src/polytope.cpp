@@ -4,7 +4,7 @@
 #include <pcl/point_types.h>
 #include <pcl/surface/concave_hull.h>
 
-
+// #include <Eigen/Dense>
 #include <ros/ros.h>
 
 #include <constrained_manipulability/polytope.hpp>
@@ -48,15 +48,16 @@ namespace constrained_manipulability
         : name_(polytope_name), AHrep_(A_left), bHrep_(b_left)
     {
         // Convert from H rep to V rep
-        ROS_INFO("Managed to come here 6");
+        // ROS_INFO("Managed to come here 6");
         Eigen::Polyhedron Poly;
         try
         {
             Poly.setHrep(A_left, b_left);
             auto vrep = Poly.vrep();
             vertex_set_ = vrep.first;
-            ROS_INFO("Managed to come here 7");
-
+            // ROS_INFO("Managed to come here 7");
+            // ROS_INFO("I am converting to V-Rep hereeeeeeeeeeeeeeeeeeeeeeeeeeeee for Intersectionnnnnnnnnnnnnnnnnnnnnnnn");
+            // std::cout<<"Vertex set is"<<vertex_set_<<std::endl;
             volume_ = computeVolume();
             //volume_ = 0.0;
             
@@ -109,11 +110,11 @@ namespace constrained_manipulability
             // Major error here because of reconstruct
             chull.reconstruct(*cloud_hull,polygons);
             
-            ROS_INFO("Managed to come here 10");
+            // ROS_INFO("Managed to come here 10");
         }
         catch (...)
         {
-            ROS_INFO("Soething is wrong");
+            // ROS_INFO("Soething is wrong");
             ROS_ERROR("qhull error");            
             return 0.0;
         }
@@ -122,24 +123,117 @@ namespace constrained_manipulability
         return chull.getTotalVolume();
     }
 
-    bool Polytope::getPolytopeMesh(const Eigen::Vector3d &offset,
-                                   std::vector<geometry_msgs::Point> &points,
-                                   constrained_manipulability::PolytopeMesh &poly_mesh) const
+    // bool Polytope::getPolytopeMesh(const Eigen::Vector3d &offset,
+    //                                std::vector<geometry_msgs::Point> &points,
+    //                                constrained_manipulability::PolytopeMesh &poly_mesh) const
+    // {
+    //     if (name_ == "invalid_polytope")
+    //     {
+    //         return false;
+    //     }
+
+    //     PointCloudPtr cloud_hull(new PointCloud);
+    //     PointCloudPtr cloud_projected(new PointCloud);
+
+    //     for (int var = 0; var < vertex_set_.rows(); ++var)
+    //     {
+    //         pcl::PointXYZ p(vertex_set_(var, 0) + offset(0),
+    //                         vertex_set_(var, 1) + offset(1),
+    //                         vertex_set_(var, 2) + offset(2));
+    //         cloud_projected->points.push_back(p);
+    //     }
+
+    //     pcl::ConvexHull<pcl::PointXYZ> chull;
+    //     std::vector<pcl::Vertices> polygons;
+    //     try
+    //     {
+    //         chull.setInputCloud(cloud_projected);
+    //         ROS_INFO("Managed to come here 14 inside the polytope library");
+    //         chull.reconstruct(*cloud_hull, polygons);
+    //     }
+    //     catch (...)
+    //     {
+    //         ROS_ERROR("plot: qhull error");
+    //         return false;
+    //     }
+
+    //     if (!(cloud_hull->points.empty()))
+    //     {
+    //         points.clear();
+
+    //         unsigned int n_triangles = polygons.size();
+    //         unsigned int n_vertices = cloud_hull->points.size();
+
+    //         // Generating the polytope mesh
+    //         poly_mesh.name = name_;
+
+    //         for (int i = 0; i < n_vertices; i++)
+    //         {
+    //             geometry_msgs::Point pp;
+    //             pp.x = cloud_hull->points[i].x;
+    //             pp.y = cloud_hull->points[i].y;
+    //             pp.z = cloud_hull->points[i].z;
+    //             poly_mesh.mesh.vertices.push_back(pp);
+    //         }
+
+    //         for (int i = 0; i < n_triangles; i++){
+    //             shape_msgs::MeshTriangle tri;
+    //             tri.vertex_indices[0] = polygons[i].vertices[0];
+    //             tri.vertex_indices[1] = polygons[i].vertices[1];
+    //             tri.vertex_indices[2] = polygons[i].vertices[2];
+    //             poly_mesh.mesh.triangles.push_back(tri);
+    //         }
+
+    //         // Also producing a vector of points for the visualization marker
+    //         // Polygons are a vector of triangles represented by 3 indices
+    //         // The indices correspond to points in cloud_hull
+    //         // Therefore for each triangle in the polygon
+    //         // we find its three vertices and extract their x y z coordinates
+    //         for (int tri = 0; tri < n_triangles; ++tri)
+    //         {
+    //             pcl::Vertices triangle = polygons[tri];
+
+    //             for (int var = 0; var < 3; ++var)
+    //             {
+    //                 geometry_msgs::Point pp;
+    //                 pp.x = cloud_hull->points[triangle.vertices[var]].x;
+    //                 pp.y = cloud_hull->points[triangle.vertices[var]].y;
+    //                 pp.z = cloud_hull->points[triangle.vertices[var]].z;
+    //                 points.push_back(pp);
+    //             }
+    //         }
+    //     }
+    //     else
+    //     {
+    //         ROS_WARN("plot: Hull empty");
+    //         return false;
+    //     }
+
+    //     return true;
+    // }
+
+    // To get Polygon Array using jsk-visualization toolbox
+
+    bool Polytope::getPolytopeArray(const Eigen::Vector3d &offset,
+                                   std::vector<geometry_msgs::Point32> &points,
+                                   geometry_msgs::PolygonStamped &poly_array_msg,
+                                   std::string &polytope_type_name) const
     {
         if (name_ == "invalid_polytope")
         {
             return false;
         }
-
+        
+        
         PointCloudPtr cloud_hull(new PointCloud);
         PointCloudPtr cloud_projected(new PointCloud);
 
         for (int var = 0; var < vertex_set_.rows(); ++var)
         {
-            pcl::PointXYZ p(vertex_set_(var, 0) + offset(0),
+            pcl::PointXYZ p2(vertex_set_(var, 0) + offset(0),
                             vertex_set_(var, 1) + offset(1),
                             vertex_set_(var, 2) + offset(2));
-            cloud_projected->points.push_back(p);
+            cloud_projected->points.push_back(p2);
         }
 
         pcl::ConvexHull<pcl::PointXYZ> chull;
@@ -147,7 +241,7 @@ namespace constrained_manipulability
         try
         {
             chull.setInputCloud(cloud_projected);
-            ROS_INFO("Managed to come here 14");
+            // ROS_INFO("Managed to come here 14 inside the polytope library");
             chull.reconstruct(*cloud_hull, polygons);
         }
         catch (...)
@@ -164,43 +258,56 @@ namespace constrained_manipulability
             unsigned int n_vertices = cloud_hull->points.size();
 
             // Generating the polytope mesh
-            poly_mesh.name = name_;
+            //poly_mesh.name = name_;
+            
 
             for (int i = 0; i < n_vertices; i++)
             {
-                geometry_msgs::Point pp;
-                pp.x = cloud_hull->points[i].x;
-                pp.y = cloud_hull->points[i].y;
-                pp.z = cloud_hull->points[i].z;
-                poly_mesh.mesh.vertices.push_back(pp);
-            }
+                geometry_msgs::Point32 pp2;
+                pp2.x = cloud_hull->points[i].x;
+                pp2.y = cloud_hull->points[i].y;
+                pp2.z = cloud_hull->points[i].z;
+                //poly_mesh.mesh.vertices.push_back(pp);
 
-            for (int i = 0; i < n_triangles; i++){
-                shape_msgs::MeshTriangle tri;
-                tri.vertex_indices[0] = polygons[i].vertices[0];
-                tri.vertex_indices[1] = polygons[i].vertices[1];
-                tri.vertex_indices[2] = polygons[i].vertices[2];
-                poly_mesh.mesh.triangles.push_back(tri);
+                poly_array_msg.polygon.points.push_back(pp2);
             }
+            // Put the first point at the end also
+            geometry_msgs::Point32 pp2;
+            pp2.x = cloud_hull->points[0].x;
+            pp2.y = cloud_hull->points[0].y;
+            pp2.z = cloud_hull->points[0].z;
+            poly_array_msg.polygon.points.push_back(pp2);
+
+            // Get the polytope name here
+            polytope_type_name = name_;
+            //std::cout<<"Polytope name is"<<polytope_type_name;
+
+            // for (int i = 0; i < n_triangles; i++){
+            //     shape_msgs::MeshTriangle tri;
+            //     tri.vertex_indices[0] = polygons[i].vertices[0];
+            //     tri.vertex_indices[1] = polygons[i].vertices[1];
+            //     tri.vertex_indices[2] = polygons[i].vertices[2];
+            //     poly_mesh.mesh.triangles.push_back(tri);
+            // }
 
             // Also producing a vector of points for the visualization marker
             // Polygons are a vector of triangles represented by 3 indices
             // The indices correspond to points in cloud_hull
             // Therefore for each triangle in the polygon
             // we find its three vertices and extract their x y z coordinates
-            for (int tri = 0; tri < n_triangles; ++tri)
-            {
-                pcl::Vertices triangle = polygons[tri];
+            // for (int tri = 0; tri < n_triangles; ++tri)
+            // {
+            //     pcl::Vertices triangle = polygons[tri];
 
-                for (int var = 0; var < 3; ++var)
-                {
-                    geometry_msgs::Point pp;
-                    pp.x = cloud_hull->points[triangle.vertices[var]].x;
-                    pp.y = cloud_hull->points[triangle.vertices[var]].y;
-                    pp.z = cloud_hull->points[triangle.vertices[var]].z;
-                    points.push_back(pp);
-                }
-            }
+            //     for (int var = 0; var < 3; ++var)
+            //     {
+            //         geometry_msgs::Point pp2;
+            //         pp2.x = cloud_hull->points[triangle.vertices[var]].x;
+            //         pp2.y = cloud_hull->points[triangle.vertices[var]].y;
+            //         pp2.z = cloud_hull->points[triangle.vertices[var]].z;
+            //         points.push_back(pp2);
+            //     }
+            // }
         }
         else
         {

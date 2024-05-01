@@ -22,7 +22,8 @@ void jointSensorCallback(const sensor_msgs::JointState::ConstPtr &msg)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "slicing_polytope_test");
+    ros::init(argc, argv, "slicing_polytope_test",
+                    ros::init_options::AnonymousName);
     std::srand(std::time(nullptr));
 
     ros::NodeHandle nh; // Create a node handle and start the node
@@ -40,7 +41,9 @@ int main(int argc, char **argv)
     constrained_manipulability::TransformVector shapes_pose;
     robot_collision_checking::FCLObjectSet objects;
     bool fetch_param_server, show_cmp, debug_statements;
+    std::string robot_namespace_suffix;
 
+    constrained_manipulability::getParameter("~/robot_namespace_suffix", robot_namespace_suffix);
     constrained_manipulability::getParameter("~/fetch_param_server", fetch_param_server);
     constrained_manipulability::getParameter("~/kdl_chain_filename", kdl_chain_filename);
     constrained_manipulability::getParameter("~/debug_statements", debug_statements);
@@ -58,6 +61,7 @@ int main(int argc, char **argv)
                                                    shapes_pose);
 
     constrained_manipulability::ConstrainedManipulability constrained_manip(nh,
+                                                                        robot_namespace_suffix,
                                                                         fetch_param_server,
                                                                         kdl_chain_filename,
                                                                         root, tip,

@@ -31,7 +31,8 @@ void linCallback(const std_msgs::Float32::ConstPtr &msg)
 
 int main(int argc, char **argv)
 {
-    ros::init(argc, argv, "shrinking_polytope_test");
+    ros::init(argc, argv, "shrinking_polytope_test",
+                            ros::init_options::AnonymousName);
     std::srand(std::time(nullptr));
 
     ros::NodeHandle nh; // Create a node handle and start the node
@@ -53,6 +54,9 @@ int main(int argc, char **argv)
     constrained_manipulability::TransformVector shapes_pose;
     robot_collision_checking::FCLObjectSet objects;
     bool fetch_param_server, show_mp, show_cmp, debug_statements;
+    std::string robot_namespace_suffix;
+
+    constrained_manipulability::getParameter("~/robot_namespace_suffix", robot_namespace_suffix);
 
     constrained_manipulability::getParameter("~/fetch_param_server", fetch_param_server);
     constrained_manipulability::getParameter("~/kdl_chain_filename", kdl_chain_filename);
@@ -72,6 +76,7 @@ int main(int argc, char **argv)
                                                    shapes_pose);
 
     constrained_manipulability::ConstrainedManipulability constrained_manip(nh,
+                                                                        robot_namespace_suffix,
                                                                         fetch_param_server,
                                                                         kdl_chain_filename,
                                                                         root, tip,
@@ -102,6 +107,7 @@ int main(int argc, char **argv)
                 constrained_manip.setLinearizationLimit(lin_limit.data);
             }
             constrained_manip.checkCollision(joint_state);
+            //ROS_INFO("I am instantiating herrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrreeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
             constrained_manipulability::Polytope allowable_poly = constrained_manip.getAllowableMotionPolytope(
                 joint_state,
                 show_mp,

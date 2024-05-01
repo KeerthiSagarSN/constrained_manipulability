@@ -10,6 +10,8 @@
 #include <geometry_msgs/Point.h>
 
 #include <constrained_manipulability/PolytopeMesh.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <jsk_recognition_msgs/PolygonArray.h>
 
 namespace constrained_manipulability
 {
@@ -43,6 +45,11 @@ namespace constrained_manipulability
             bool getPolytopeMesh(const Eigen::Vector3d &offset,
                     std::vector<geometry_msgs::Point> &points,
                     constrained_manipulability::PolytopeMesh &poly_mesh) const;
+            
+            bool getPolytopeArray(const Eigen::Vector3d &offset,
+                    std::vector<geometry_msgs::Point32> &points2,
+                    geometry_msgs::PolygonStamped &poly_array,
+                    std::string &polytope_type_name) const;
 
             /// Transform polytope to Cartesian space
             void transformCartesian(Eigen::Matrix<double, 3, Eigen::Dynamic> Jp, Eigen::Vector3d P);

@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
     <arg name="root_link" default="base_link" />
-    <arg name="tip_link" default="wrist_3_link" />
+    <arg name="tip_link" default="tool0" />
 
     <!-- Load the robot -->
     <include file="$(find ur_description)/launch/load_ur3e.launch" />
