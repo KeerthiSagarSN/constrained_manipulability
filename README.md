@@ -24,6 +24,7 @@ Clone repo into your current workspace as follows:
 cd catkin_ws/src
 git clone https://github.com/philip-long/constrained_manipulability.git
 cd ..
+rosdep install -r --from-paths . --ignore-src --rosdistro $ROS_DISTRO -y
 catkin build
 ```
 
