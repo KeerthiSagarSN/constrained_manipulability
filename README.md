@@ -31,6 +31,16 @@ cd ..
 colcon build --symlink-install
 ```
 
+### Dependency Installations
+
+```
+cd polytope_ws/src
+git clone https://github.com/philip-long/constrained_manipulability.git
+cd ..
+colcon build --symlink-install
+```
+
+
 ### Examples
 
 An template robot launch can run using the `abstract_robot.launch.py` file:
