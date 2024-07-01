@@ -222,6 +222,7 @@ bool Polytope::constructMesh()
 
             for (int var = 0; var < 3; ++var)
             {
+                
                 geometry_msgs::msg::Point pp;
                 pp.x = cloud_hull->points[triangle.vertices[var]].x;
                 pp.y = cloud_hull->points[triangle.vertices[var]].y;
