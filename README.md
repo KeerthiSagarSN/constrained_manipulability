@@ -31,15 +31,6 @@ cd ..
 colcon build --symlink-install
 ```
 
-### Dependency Installations
-
-```
-cd polytope_ws/src
-git clone https://github.com/philip-long/constrained_manipulability.git
-cd ..
-colcon build --symlink-install
-```
-
 
 ### Examples
 
@@ -57,6 +48,8 @@ ros2 launch constrained_manipulability abstract_gen3.launch.py
 ```
 
 Please note in the default RViz config file that appears, you should add the `/visualization_marker` topic to see the scene and polytopes.
+
+
 
 ## Shrinking Polytopes
 
