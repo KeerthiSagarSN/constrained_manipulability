@@ -17,6 +17,10 @@ Constrained Manipulability is a library used to compute and vizualize a robot's 
 - [robot_collision_checking](https://github.com/philip-long/robot_collision_checking)
 - [eigen-cddlib](https://github.com/philip-long/eigen-cddlib)
 - [octomap_filter](https://github.com/mazrk7/octomap_filter)
+- [octomap_server]
+  ```
+  sudo apt-get install ros-humble-octomap-server
+  ```
 
 ### Install instructions
 Clone repo into your current workspace as follows:
