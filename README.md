@@ -24,6 +24,10 @@ Constrained Manipulability is a library used to compute and vizualize a robot's 
   ```
   sudo apt-get install ros-humble-octomap-server
   ```
+- octomap_rviz_plugins
+  ```
+  sudo apt-get install ros-humble-octomap-rviz-plugins
+  ```
 
 ### Install Instructions
 
