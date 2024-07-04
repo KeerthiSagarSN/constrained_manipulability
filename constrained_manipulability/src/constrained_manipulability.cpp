@@ -2,9 +2,10 @@
 #include <chrono>
 
 #include <rclcpp/logging.hpp>
-
 #include <geometric_shapes/shape_to_marker.h>
 
+#include <geometry_msgs/msg/polygon_stamped.hpp>
+#include <jsk_recognition_msgs/msg/polygon_array.hpp>
 #include <geometry_msgs/msg/transform_stamped.hpp>
 #include <geometry_msgs/msg/pose_stamped.hpp>
 

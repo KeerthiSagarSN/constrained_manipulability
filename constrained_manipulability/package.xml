@@ -29,6 +29,7 @@
   <depend>pcl_ros</depend>
   <depend>urdf</depend>
   <depend>visualization_msgs</depend>
+  <depend>jsk_recognition_msgs</depend>
 
   <depend>constrained_manipulability_interfaces</depend>
   <depend>octomap_filter_interfaces</depend>

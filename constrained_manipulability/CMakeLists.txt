@@ -33,6 +33,8 @@ find_package(tf2_eigen REQUIRED)
 find_package(tf2_eigen_kdl REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(visualization_msgs REQUIRED)
+find_package(jsk_recognition_msgs REQUIRED)
+
 
 find_package(urdf QUIET)
 if(urdf_FOUND)
@@ -75,6 +77,7 @@ set(dependencies
   tf2_ros
   urdf
   visualization_msgs
+  jsk_recognition_msgs
   constrained_manipulability_interfaces
   octomap_filter_interfaces
   robot_collision_checking

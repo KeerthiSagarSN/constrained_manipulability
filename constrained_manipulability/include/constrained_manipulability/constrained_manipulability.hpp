@@ -35,6 +35,7 @@
 #include <std_msgs/msg/float32.hpp>
 #include <visualization_msgs/msg/marker.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
+#include <jsk_recognition_msgs/msg/polygon_array.hpp>
 
 #include "robot_collision_checking/fcl_interface.hpp"
 
@@ -53,6 +54,8 @@
 #include "constrained_manipulability_interfaces/srv/get_jacobian_matrix.hpp"
 #include "constrained_manipulability_interfaces/srv/get_polytopes.hpp"
 #include "constrained_manipulability_interfaces/srv/get_sliced_polytope.hpp"
+
+ 
 
 namespace constrained_manipulability
 {
