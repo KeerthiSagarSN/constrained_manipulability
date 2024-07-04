@@ -57,6 +57,9 @@
 
  
 
+
+ 
+
 namespace constrained_manipulability
 {
 /// GeometryInformation contains all geometric information obtained from chain
@@ -363,5 +366,7 @@ class ConstrainedManipulability : public rclcpp::Node
         rclcpp::Publisher<constrained_manipulability_interfaces::msg::Polytope>::SharedPtr poly_pub_;
         rclcpp::Publisher<octomap_filter_interfaces::msg::FilterMesh>::SharedPtr filt_mesh_pub_;
         rclcpp::Publisher<octomap_filter_interfaces::msg::FilterPrimitive>::SharedPtr filt_prim_pub_;
+        //rclcpp::Publisher<jsk_recognition_msgs::msg::PolygonArray>::SharedPtr poly_mesh_allowable_pub1;
+        //rclcpp::Publisher<jsk_recognition_msgs::msg::PolygonArray>::SharedPtr poly_mesh_cmp_pub1;
 };
 } // namespace constrained_manipulability

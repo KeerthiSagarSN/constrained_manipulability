@@ -211,6 +211,8 @@ ConstrainedManipulability::ConstrainedManipulability(const rclcpp::NodeOptions& 
     mkr_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/visualization_marker", 1);
     obj_dist_pub_ = this->create_publisher<constrained_manipulability_interfaces::msg::ObjectDistances>("constrained_manipulability/obj_distances", 1);
     poly_pub_ = this->create_publisher<constrained_manipulability_interfaces::msg::Polytope>("constrained_manipulability/polytope", 1);
+    
+    
     filt_mesh_pub_ = this->create_publisher<octomap_filter_interfaces::msg::FilterMesh>("filter_mesh", 1);
     filt_prim_pub_ = this->create_publisher<octomap_filter_interfaces::msg::FilterPrimitive>("filter_primitive", 1);
 
@@ -311,6 +313,7 @@ void ConstrainedManipulability::getPolytopesCallback(const std::shared_ptr<const
         if (poly.isValid())
         {
             poly_msg.mesh = poly.getMesh();
+            poly_msg.jskmesh = poly.getjskMesh();
             poly_msg.hyperplanes = eigenToMatrix(AHrep);
             poly_msg.shifted_distance =  eigenToVector(bHrep);
         }
@@ -387,6 +390,7 @@ void ConstrainedManipulability::getSlicedPolytopeCallback(const std::shared_ptr<
     if (sliced_poly.isValid())
     {
         poly_msg.mesh = sliced_poly.getMesh();
+        poly_msg.jskmesh = poly.getjskMesh();
         poly_msg.hyperplanes = eigenToMatrix(AHrep);
         poly_msg.shifted_distance =  eigenToVector(bHrep);
     }
@@ -724,6 +728,7 @@ Polytope ConstrainedManipulability::getAllowableMotionPolytope(const sensor_msgs
     poly_msg.stamp = joint_state.header.stamp;
     poly_msg.name = vrep_polytope.getName();
     poly_msg.mesh = vrep_polytope.getMesh();
+    poly_msg.jskmesh = poly.getjskMesh();
     poly_msg.volume = vrep_polytope.getVolume();
     poly_msg.hyperplanes = eigenToMatrix(AHrep);
     poly_msg.shifted_distance =  eigenToVector(bHrep);
@@ -797,6 +802,7 @@ Polytope ConstrainedManipulability::getConstrainedAllowableMotionPolytope(const 
     poly_msg.stamp = joint_state.header.stamp;
     poly_msg.name = vrep_polytope.getName();
     poly_msg.mesh = vrep_polytope.getMesh();
+    poly_msg.jskmesh = poly.getjskMesh();
     poly_msg.volume = vrep_polytope.getVolume();
     poly_msg.hyperplanes = eigenToMatrix(AHrep);
     poly_msg.shifted_distance =  eigenToVector(bHrep);
@@ -871,6 +877,7 @@ Polytope ConstrainedManipulability::getVelocityPolytope(const sensor_msgs::msg::
     poly_msg.stamp = joint_state.header.stamp;
     poly_msg.name = vrep_polytope.getName();
     poly_msg.mesh = vrep_polytope.getMesh();
+    //poly_msg.jskmesh = poly.getjskMesh();
     poly_msg.volume = vrep_polytope.getVolume();
     poly_msg.hyperplanes = eigenToMatrix(AHrep);
     poly_msg.shifted_distance =  eigenToVector(bHrep);
@@ -944,6 +951,7 @@ Polytope ConstrainedManipulability::getConstrainedVelocityPolytope(const sensor_
     poly_msg.stamp = joint_state.header.stamp;
     poly_msg.name = vrep_polytope.getName();
     poly_msg.mesh = vrep_polytope.getMesh();
+    //poly_msg.jskmesh = vrep_polytope.getjskMesh();
     poly_msg.volume = vrep_polytope.getVolume();
     poly_msg.hyperplanes = eigenToMatrix(AHrep);
     poly_msg.shifted_distance =  eigenToVector(bHrep);
@@ -984,6 +992,7 @@ void ConstrainedManipulability::plotPolytope(const std::string& poly_name, const
     auto marker_array_msg = std::make_shared<visualization_msgs::msg::MarkerArray>();
 
     visualization_msgs::msg::Marker mkr_mesh;
+    jsk_recognition_msgs::msg::PolygonArray mkr_jskmesh;
     mkr_mesh.ns = poly_name;
     mkr_mesh.action = visualization_msgs::msg::Marker::ADD;
     mkr_mesh.type = visualization_msgs::msg::Marker::TRIANGLE_LIST;
@@ -1016,6 +1025,13 @@ void ConstrainedManipulability::plotPolytope(const std::string& poly_name, const
     marker_array_msg->markers.push_back(mkr_sphere);
 
     mkr_pub_->publish(*marker_array_msg);
+
+
+
+    //mkr_jskmesh.ns = poly_name;
+    //mkr_jskmesh.polygons = polygons
+    //jskmesh.header = std_msgs/header;
+    //mkr_pub_->publish(*marker_array_msg);
 }
 
 bool ConstrainedManipulability::checkCollision(const sensor_msgs::msg::JointState& joint_state)

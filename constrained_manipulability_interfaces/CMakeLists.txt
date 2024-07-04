@@ -9,6 +9,7 @@ find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(shape_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(jsk_recognition_msgs REQUIRED)
 
 find_package(rosidl_default_generators REQUIRED)
 
@@ -29,7 +30,7 @@ set(srv_files
 rosidl_generate_interfaces(${PROJECT_NAME}
   ${msg_files}
   ${srv_files}
-  DEPENDENCIES builtin_interfaces geometry_msgs sensor_msgs shape_msgs std_msgs
+  DEPENDENCIES builtin_interfaces geometry_msgs sensor_msgs shape_msgs std_msgs jsk_recognition_msgs
 )
 
 install(DIRECTORY rviz DESTINATION share/${PROJECT_NAME}/)

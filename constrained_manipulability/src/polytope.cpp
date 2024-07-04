@@ -3,7 +3,9 @@
 #include <fstream>
 #include <cstdio>
 
+
 #include <eigen-cddlib/Polyhedron.h>
+
 
 #include <pcl/point_types.h>
 #include <pcl/surface/impl/convex_hull.hpp>
@@ -58,6 +60,8 @@ Polytope::Polytope(const std::string& polytope_name, const Eigen::MatrixXd& vert
         {
             RCLCPP_ERROR(getLogger(), "Failed to construct mesh");
         }
+        else{ constructjskMesh();
+        }
     }
     catch (...)
     {
@@ -88,6 +92,8 @@ Polytope::Polytope(const std::string& polytope_name, const Eigen::MatrixXd& A_le
             if (!constructMesh())
             {
                 RCLCPP_ERROR(getLogger(), "Failed to construct mesh");
+            }
+            else{ constructjskMesh();
             }
         }
     }
@@ -152,6 +158,7 @@ double Polytope::computeVolume() const
     fclose(null_stream);
 
     return chull.getTotalVolume();
+    
 }
 
 bool Polytope::constructMesh()
@@ -163,6 +170,8 @@ bool Polytope::constructMesh()
 
     PointCloudPtr cloud_hull(new PointCloud);
     PointCloudPtr cloud_projected(new PointCloud);
+
+    jsk_recognition_msgs::msg::PolygonArray poly_arr_msg;
 
     for (int var = 0; var < vertex_set_.rows(); ++var)
     {
@@ -240,6 +249,111 @@ bool Polytope::constructMesh()
     return true;
 }
 
+
+bool Polytope::constructjskMesh()
+{
+    if (name_ == "invalid_polytope")
+    {
+        return false;
+    }
+
+    // PointCloudPtr cloud_hull(new PointCloud);
+    // PointCloudPtr cloud_projected(new PointCloud);
+
+    // for (int var = 0; var < vertex_set_.rows(); ++var)
+    // {
+    //     pcl::PointXYZ p(vertex_set_(var, 0) + offset_position_(0),
+    //                     vertex_set_(var, 1) + offset_position_(1),
+    //                     vertex_set_(var, 2) + offset_position_(2));
+    //     cloud_projected->points.push_back(p);
+    // }
+
+    // pcl::ConvexHull<pcl::PointXYZ> chull;
+    // std::vector<pcl::Vertices> polygons;
+    // try
+    // {
+    //     chull.setInputCloud(cloud_projected);
+    //     chull.reconstruct(*cloud_hull, polygons);
+    // }
+    // catch (...)
+    // {
+    //     // RCLCPP_WARN(getLogger(), "plot: Qhull error");
+    //     return false;
+    // }
+
+    if (!(points_.empty()))
+    {
+        
+        //jskmesh_.polygons.points = points_;
+        //unsigned int n_triangles = points_.size();
+        unsigned int n_vertices = points_.size();
+
+        // // Generating the polytope mesh
+        for (unsigned int i = 0; i < n_vertices; i++)
+        {
+            geometry_msgs::msg::Point32 pp2;
+            pp2.x = points_[i].x;
+            pp2.y = points_[i].y;
+            pp2.z = points_[i].z;
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "Value of pp2 = " << pp2.x);
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "Value of pp2 = " << pp2.y);
+            RCLCPP_INFO_STREAM(rclcpp::get_logger("rclcpp"), "Value of pp2 = " << pp2.z);
+            
+            //jskmesh_.polygons.polygon.points.push_back(pp);
+        }
+        //jskpoints_.clear();
+
+        //unsigned int n_triangles = points_.size();
+        // unsigned int n_vertices = points_.size();
+
+        // // Generating the polytope mesh
+        // for (unsigned int i = 0; i < n_vertices; i++)
+        // {
+        //     geometry_msgs::msg::Point pp;
+        //     pp.x = cloud_hull->points[i].x;
+        //     pp.y = cloud_hull->points[i].y;
+        //     pp.z = cloud_hull->points[i].z;
+        //     //jskmesh_.vertices.push_back(pp);
+        // }
+
+        // for (unsigned int i = 0; i < n_triangles; i++)
+        // {
+        //     shape_msgs::msg::MeshTriangle tri;
+        //     tri.vertex_indices[0] = polygons[i].vertices[0];
+        //     tri.vertex_indices[1] = polygons[i].vertices[1];
+        //     tri.vertex_indices[2] = polygons[i].vertices[2];
+        //     //jskmesh_.triangles.push_back(tri);
+        // }
+
+        // // Also producing a vector of points for the visualization marker
+        // // Polygons are a vector of triangles represented by 3 indices
+        // // The indices correspond to points in cloud_hull
+        // // Therefore for each triangle in the polygon
+        // // we find its three vertices and extract their x y z coordinates
+        // for (unsigned int tri = 0; tri < n_triangles; ++tri)
+        // {
+        //     pcl::Vertices triangle = polygons[tri];
+
+        //     for (int var = 0; var < 3; ++var)
+        //     {
+                
+        //         geometry_msgs::msg::Point pp;
+        //         pp.x = cloud_hull->points[triangle.vertices[var]].x;
+        //         pp.y = cloud_hull->points[triangle.vertices[var]].y;
+        //         pp.z = cloud_hull->points[triangle.vertices[var]].z;
+        //         //jskpoints_.push_back(pp);
+        //     }
+        // }
+    }
+    else
+    {
+        // RCLCPP_WARN(getLogger(), "plot: Qhull empty");
+        return false;
+    }
+
+    return true;
+}
+
 void Polytope::transformCartesian(const Eigen::Matrix<double, 3, Eigen::Dynamic>& Jp)
 {
     if (name_ == "invalid_polytope")
@@ -264,6 +378,8 @@ void Polytope::transformCartesian(const Eigen::Matrix<double, 3, Eigen::Dynamic>
     // Changing state, so make sure to re-compute volume and mesh
     volume_ = computeVolume();
     constructMesh();
+    
+    //constructjskMesh();
 }
 
 Polytope Polytope::slice(const std::string& name, SLICING_PLANE index, double plane_width) const
