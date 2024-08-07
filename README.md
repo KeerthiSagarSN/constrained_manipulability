@@ -31,7 +31,10 @@ Constrained Manipulability is a library used to compute and vizualize a robot's 
   ```
   sudo apt-get install ros-humble-octomap-rviz-plugins
   ```
-
+- nav2_costmap_2d
+  ```
+  sudo apt-get install ros-humble-nav2-costmap-2d
+  ```
 ### Install Instructions
 
 Clone repo into your current workspace as follows:
