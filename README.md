@@ -77,6 +77,10 @@ Modify the limits using the sliding bar that appears and again add the `/visuali
 ## IK Teleoperation
 
 The following example illustrates how to perform IK teleoperation based on the polytope constraints computed in the `constrained_manipulability` package. Please first run the server with a UR3e configuration (as well as an octomap scene):
+Install cvxpy if necessary:
+```
+pip install cvxpy
+```
 ```
 ros2 launch constrained_manipulability cm_server_example.launch.py
 ```
