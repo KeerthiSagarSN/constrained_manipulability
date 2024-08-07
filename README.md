@@ -15,6 +15,9 @@ Constrained Manipulability is a library used to compute and vizualize a robot's 
     - [tf2_eigen](https://docs.ros2.org/foxy/api/tf2_eigen/) 
     - [geometric_shapes](https://github.com/moveit/geometric_shapes/tree/ros2)
     - [pcl_ros](https://github.com/ros-perception/perception_pcl)
+      ```
+      sudo apt-get install ros-humble-pcl-ros
+      ```
     - [kdl_parser](https://github.com/ros/kdl_parser/tree/ros2)
 - [Eigen 3](https://eigen.tuxfamily.org/dox/GettingStarted.html)
 - [robot_collision_checking](https://github.com/philip-long/robot_collision_checking)
