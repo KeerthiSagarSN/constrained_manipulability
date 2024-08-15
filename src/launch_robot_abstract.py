@@ -222,13 +222,6 @@ robot_suffix = "_dualarm"
 
 
 
-rospy.loginfo("URDF loaded into /robot_description parameter")
-
-
-
-
-# import pycapacity 
-import pycapacity as pycap
 
 # get panda robot usinf example_robot_data
 robot = load('kuka_meca')
@@ -424,25 +417,6 @@ class Geomagic2KUKA():
         self.kuka_joint_states_subscriber = rospy.Subscriber(
             "/joint_states", JointState, self.kuka_callback, queue_size=1)
 
-        self.meca_joint_states_subscriber = rospy.Subscriber("/MecademicRobot_joint_fb",JointState, self.meca_callback, queue_size=1)
-        self.kuka_joint_states_publisher = rospy.Publisher(
-            "/position_trajectory_controller/command", JointTrajectory, queue_size=1)
-        
-        
-
-        self.button_robot_subscriber = rospy.Subscriber(
-            "buttons_geo", Joy, self.button_robot_update_callback, queue_size=1)
-        
-        self.collider_state_subscriber = rospy.Subscriber(
-            "object_collider", Bool, self.collision_state_callback, queue_size=1)
-
-
-
-        # Rosbag - start service - Initializing parameter to call the service
-        self.start_rosbag = rospy.Subscriber("/rosbag_start_topic", Bool, self.rosbag_start_record_callback,queue_size=1)
-
-        self.stop_rosbag = rospy.Subscriber("/rosbag_stop_topic", Bool, self.rosbag_stop_record_callback,queue_size=1)
-
 
 
 
@@ -452,22 +426,9 @@ class Geomagic2KUKA():
         self.end_effector_position_kuka = rospy.Publisher("/grasp_frame_kuka",PointStamped,queue_size=1)
         self.end_effector_position_meca = rospy.Publisher("/grasp_frame_meca",PointStamped,queue_size=1)
 
-
-        self.meca_joint_states_publisher   = rospy.Publisher("MecademicRobot_joint", JointState, queue_size=1)
-
-        # self.meca_gripper_open = rospy.Subscriber(
-        #     "gripper_state_topic", Bool, self.meca_gripper_actuate_callback, queue_size=1)
-
-
         
 
-        #self.fixture_plane_distance = rospy.Publisher('/fixture_plane_distances', Float64, latch=True, queue_size=3)
-        # self.meca_twist_publisher = rospy.Publisher("twist_test", Twist, queue_size=1)
-        self.scalerXYZ = [0.5, 0.5, 0.5]
-        self.mecaOffsetXYZ = [0.160, 0.0, 0.225]
-
-        self.geomagic_offset = [0.1314, -0.16, 0.1]
-        self.haptic_twist = TwistStamped()
+        
         self.robot_joint_states = JointState()
         self.robot_joint_states.position = zeros(self.no_of_joints-1,dtype=float)
 
@@ -499,23 +460,7 @@ class Geomagic2KUKA():
         self.change_gripper_state = False
         self.changing_state = False
 
-        self.current_collision_state = True
-        self.angle_rot_previous_z = 0.0
-        self.angle_rot_z = 0.0
-        self.angle_rot_previous_y = 0.0
-        self.angle_rot_y = 0.0
-        self.angle_rot_previous_x = 0.0
-        self.angle_rot_x = 0.0
-
-
-        self.flag_linear = False
-        self.flag_angular = False
-
-        self.lin_vel_x_prev = 0
-        self.lin_vel_y_prev = 0
-        self.lin_vel_z_prev = 0
-
-
+        
 
 
 
@@ -538,33 +483,7 @@ class Geomagic2KUKA():
 
         self.robot_joint_names_pub = self.robot_joint_names
 
-        # self.q_upper_limit = [
-        #     robot_description.joint_map[i].limit.upper - 0.07 for i in self.robot_joint_names]
-        # self.q_lower_limit = [
-        #     robot_description.joint_map[i].limit.lower + 0.07 for i in self.robot_joint_names]
-
-        # self.qdot_limit = [
-        #     robot_description.joint_map[i].limit.velocity for i in self.robot_joint_names]
-
         self.gripper_state_msg = Bool()
-        # self.gripper_state_msg.data = False
-
-        ########################
-        ## Get frame transformation here - End effector frame with respect to base
-        ## Frame - frame.p = position 3x1 vector, frame.M = Rotational matrix of the frame
-
-        '''
-        self.eeFrame = kdl_chain.getSegment(0).getFrameToTip()
-
-        self.baseFrame = PyKDL.Frame.Identity()
-
-        self.cam_rot = PyKDL.Rotation()
-        self.cam_rot = self.cam_rot.RPY(0,0,0)
-        '''
-        #self.cam_rot = PyKDL.Rotation()
-        #self.cam_rot = self.cam_rot.RPY(0,0,0)
-
-        
 
         self.plane_verts = []
         self.pose_verts = []
@@ -586,16 +505,12 @@ class Geomagic2KUKA():
 
         self.msg_status_ik = String()
 
-        # print('self.qdot_max', self.qdot_max)
-        # print('self.qdot_min', self.qdot_min)
-        #self.q_in = zeros(6)
+
 
 
         self.plot_polytope_thread = None
         self.thread_is_running = False
-        #self.thread_is_running = True
 
-        #self.thread_cm_is_running = False
 
         self.force_baseline_arr_meca = zeros(shape=(500,3))
         self.torque_baseline_arr_meca = zeros(shape=(500,3))
@@ -625,12 +540,6 @@ class Geomagic2KUKA():
 
 
 
-
-
-        #self.q_bounds = zeros(len(self.q_upper_limit),2)
-
-        
-
         
         self.fun_counter = 0
 
@@ -644,24 +553,7 @@ class Geomagic2KUKA():
 
         pin.forwardKinematics(self.rmodel,self.rdata, self.q_in_numpy)
         pin.updateFramePlacements(self.rmodel,self.rdata)
-        # self.grasp_frame_r1_SE3 = self.rdata.oMf[self.rmodel.getFrameId('tcp_kuka')]
-        # print('self.rdata.oMf[self.rmodel.getFrameId_tcp_kuka',self.rdata.oMf[self.rmodel.getFrameId('tcp_kuka')])
-        # self.grasp_frame_r1_SE3.translation = (self.rdata.oMf[self.rmodel.getFrameId('tcp_meca')].translation - self.rdata.oMf[self.rmodel.getFrameId('tcp_kuka')].translation)*0.5
-        # print('self.grasp_frame_r1_SE3.translation',self.grasp_frame_r1_SE3.translation)
-        # self.grasp_frame_r2_SE3 = self.rdata.oMf[self.rmodel.getFrameId('tcp_meca')]
-        # self.grasp_frame_r2_SE3.translation = (self.rdata.oMf[self.rmodel.getFrameId('tcp_meca')].translation - self.rdata.oMf[self.rmodel.getFrameId('tcp_kuka')].translation)*0.5
-
-        # print('self.grasp_frame_r2_SE3.translation',self.grasp_frame_r2_SE3.translation)
         
-        # #self.rmodel.getFrameId('tcp_kuka')
-        # self.grasp_frame_kuka_id = self.rmodel.addFrame(pin.Frame('grasp_frame_r1',6,self.rmodel.getFrameId('tcp_kuka'),self.grasp_frame_r1_SE3,pin.FrameType.OP_FRAME)) # Returns the ID of the frame
-        # self.grasp_frame_meca_id= self.rmodel.addFrame(pin.Frame('grasp_frame_r2',12,self.rmodel.getFrameId('tcp_meca'),self.grasp_frame_r2_SE3,pin.FrameType.OP_FRAME)) # Returns the ID of the frame
-                
-        # frame_info = self.rmodel.frames[self.grasp_frame_kuka_id]
-        # print(frame_info.placement.translation)
-        
-
-        #input('stop here')
 
         self.publish_velocity_polytope = rospy.Publisher(
             "/available_velocity_polytope"+robot_suffix, PolygonArray, queue_size=100)
@@ -725,15 +617,7 @@ class Geomagic2KUKA():
 
         #self.robot_joint_state_subscriber = rospy.Subscriber("/joint_states",JointState,self.joint_state_callback,queue_size=1)
 
-        # Paper cartesian desired polytope
-        self.cartesian_desired_vertices = 1.0*array([[0.20000, 0.50000, 0.50000],
-                                                     [0.50000, -0.10000, 0.50000],
-                                                     [0.50000, 0.50000, -0.60000],
-                                                     [0.50000, -0.10000, -0.60000],
-                                                     [-0.30000, 0.50000, 0.50000],
-                                                     [-0.30000, -0.10000, 0.50000],
-                                                     [-0.30000, 0.50000, -0.60000],
-                                                     [-0.30000, -0.10000, -0.60000]])
+
 
         self.cartesian_desired_vertices = 0.05*array([[0.20000, 0.50000, 0.50000],
                                                      [0.50000, -0.10000, 0.50000],
@@ -745,10 +629,7 @@ class Geomagic2KUKA():
                                                      [-0.30000, -0.10000, -0.60000]])
         
 
-        # Create an interactive marker server
-        # Create an interactive marker server
 
-        
         
         self.desired_pose = Pose()
 
@@ -778,14 +659,7 @@ class Geomagic2KUKA():
 
         self.plot_polytope_thread = None
         self.thread_is_running = False
-        #self.thread_cm_is_running = False
-
-
-        #self.q_test = zeros(7)
-
-        # self.pykdl_util_kin = KDLKinematics(
-        #     robot_urdf, base_link, tip_link, None)
-        #self.q_bounds = zeros(len(self.q_upper_limit),2)
+       
 
         
 
@@ -836,20 +710,7 @@ class Geomagic2KUKA():
     def stop_thread(self):
         self.thread_is_running = False
         print('Stopping thread')
-    '''
-    def start_cm_plot_thread(self):
-        if self.thread_cm_is_running:
-            print("Capacity PLotting Thread already running!")
-            return
-        self.plot_cm_thread = threading.Thread(target=self.plot_capacity_margin_est)
-        self.thread_cm_is_running = True
-        self.plot_cm_thread.start()
 
-        #input('I have started thread')
-    def stop_cm_thread(self):
-        self.thread_cm_is_running = False
-        print('Stopping CM Plot thread')
-    '''
     def processfeedback(self, feedback):
         self.desired_pose.position.x = feedback.pose.position.x
         self.desired_pose.position.y = feedback.pose.position.y
@@ -1024,17 +885,7 @@ class Geomagic2KUKA():
                 
                 J_Hess = hstack((J_Hess1[:,:6],J_Hess2[:,6:]))
 
-                # print('pos_act_mat',pos_act_mat)
 
-                #pos_act = position_70(q_in)
-                # print('self.pos_reference',self.pos_reference)
-                #print('Current position in optimization is', pos_act)
-                #input('Wait here ')
-                # print('norm,',norm(pos_act-self.pos_reference))
-                # print('self.pos_reference',self.pos_reference)
-                #print('pos_act', pos_act)
-
-                #print('distance error norm',distance_error)
                 
 
                 scaling_factor = 10.0
@@ -1049,26 +900,10 @@ class Geomagic2KUKA():
 
 
                 self.cm_est = cm_index
-                #print('self.cm_est',self.cm_est)
-                #print('facet_vertex_idx',facet_vertex_idx)
-                #print('capacity_margin_proj_vertex',capacity_margin_proj_vertex)
-                #print('capacity_margin_proj_vertex_est',capacity_margin_proj_vertex_est)
-                
 
-                # Only for visualization - Polytope at end-effector - No physical significance
-                #ef_pose = pykdl_util_kin.forward(self.q_in_numpy)[:3,3]
-
-                
-                
-
-                # Get end-effector of the robot here for the polytope offset
-
-                #ef_pose = position_70(q_in)
 
                 ef_pose = pos_act
-                #ef_pose = ef_pose[:,0]
-                #print('ef_pose is',ef_pose)
-                #input('stop to test ef_pose')
+
 
                 ########### Actual POlytope plot ###########################################################################
                 # Publish polytope faces
@@ -1107,7 +942,7 @@ class Geomagic2KUKA():
                                                                                         array([0,0,0]), "base_link", 1))
                 '''
                 ### Plane for capacity margin 
-                #print('capacity_faces',capacity_faces)
+
 
                 ### Vertex for capacity margin on the Available Polytope
                 CapacitymarginactualArray_message = self.publish_capacity_margin_actual.publish(create_segment_msg(closest_vertex, \
@@ -1176,24 +1011,11 @@ class Geomagic2KUKA():
         counter = 0
 
         for result in distance_results: 
-            #cr = geom_data.collisionResults[k].closestPoints
-            #dr_result = distance_results[k]
-            #print('result is',dir(result))
-            #cp = robot.collision_model.collisionPairs[k]
+
             cp1 = result.getNearestPoint1()
             cp2 = result.getNearestPoint2()
             print('closest points 1',result.getNearestPoint1())
             print('closest points 2',result.getNearestPoint2())
-
-
-            # msg1.point.x = cp1[0]
-            # msg1.point.y = cp1[1]
-            # msg1.point.z = cp1[2]
-
-            # msg2.point.x = cp2[0]
-            # msg2.point.y = cp2[1]
-            # msg2.point.z = cp2[2]
-
 
 
             if (counter < 12):
@@ -1201,102 +1023,11 @@ class Geomagic2KUKA():
                 self.obstacle_link_vector[counter,0] = cp2[0] - cp1[0]
                 self.obstacle_link_vector[counter,1] = cp2[1] - cp1[1]
                 self.obstacle_link_vector[counter,2] = cp2[2] - cp1[2]
-                #self.cp1_publisher_msg[counter].publish(msg1)
-                #self.cp2_publisher_msg[counter].publish(msg2)
+
 
             counter += 1
-        
-            #print(dir(result))
-            # print('closest points',dr.nearest_points[1].transpose())
-        #print('total pairs are',counter)
-            #print("collision pair:",cp.first,",",cp.second,"- collision:","Yes" if cr.isCollision() else "No")
-        
-        # Print the status of collision for all collision pairs
-        # for k in range(len(robot.collision_model.collisionPairs)): 
-        #     # cr = geom_data.collisionResults[k]
-            
-        #     # if cr.isCollision() == True:
-        #     #     print('In collision')
-        #     aaa = pin.computeCollisions(self.rmodel,self.rdata,self.geom_model,self.geom_data,self.q_in_collision,True)
-        #     a = pin.computeDistances(self.rmodel,self.rdata,self.geom_model,self.geom_data,self.q_in_collision)
-
-        #     b = self.geom_data.distanceResults[0]
-        #     print('b',b)
-        #     # res = self.geom_data.collisionResults[0]
-        #     #assert(res.isCollision())
-        #     # contact = res.getContact(0)
-        #     # print(self.geom_model.collisionPairs[0],contact.normal.T,contact.pos.T)
-        #     # cp = robot.collision_model.collisionPairs[k]
-        #     # print("collision pair:",cp.first,",",cp.second,"- collision:","Yes" if cr.isCollision() else "No")
-        #mutex.release()
     
-
-
-    def ft_meca_callback(self, ft_data_meca):
-        
-
-        # Measure the baseline value here for the FT sensor data
-        # if (self.base_line_counter < 500):
-        #     #for i in range(self.base_line_counter):
-        #     self.force_baseline_arr_meca[self.base_line_counter,0] = ft_data_meca.wrench.force.x
-        #     self.force_baseline_arr_meca[self.base_line_counter,1] = ft_data_meca.wrench.force.x
-        #     self.force_baseline_arr_meca[self.base_line_counter,2] = ft_data_meca.wrench.force.x
-            
-        #     self.torque_baseline_arr_meca[self.base_line_counter,0] = ft_data_meca.wrench.torque.x
-        #     self.torque_baseline_arr_meca[self.base_line_counter,1] = ft_data_meca.wrench.torque.x
-        #     self.torque_baseline_arr_meca[self.base_line_counter,2] = ft_data_meca.wrench.torque.x
-
-        #     print(' array is',self.force_baseline_arr_meca[self.base_line_counter])
-        #     self.base_line_counter += 1
-        if (self.base_line_counter< 500):
-            #if (self.baseline_record_once):
-            # print('forces arr',self.force_baseline_arr_meca)
-            # self.force_baseline_meca[0] = mean(self.force_baseline_arr_meca[:,0])
-            # self.force_baseline_meca[1] = mean(self.force_baseline_arr_meca[:,1])
-            # self.force_baseline_meca[2] = mean(self.force_baseline_arr_meca[:,2])
-
-
-            # self.torque_baseline_meca[0] = mean(self.torque_baseline_arr_meca[:,0])
-            # self.torque_baseline_meca[1] =mean(self.torque_baseline_arr_meca[:,1])
-            # self.torque_baseline_meca[2] = mean(self.torque_baseline_arr_meca[:,2])
-            # print('baseline forces are',self.force_baseline_meca)
-            self.force_baseline_meca[0] = ft_data_meca.wrench.force.x
-            self.force_baseline_meca[1] = ft_data_meca.wrench.force.y
-            self.force_baseline_meca[2] = ft_data_meca.wrench.force.z
-
-            self.torque_baseline_meca[0] = ft_data_meca.wrench.torque.x
-            self.torque_baseline_meca[1] = ft_data_meca.wrench.torque.y
-            self.torque_baseline_meca[2] = ft_data_meca.wrench.torque.z
-            self.base_line_counter += 1
-            #print('baseline forces are',self.force_baseline_meca)
-            #print('baseline torques are',self.torque_baseline_meca)
-            #input('Enteredd this loop')
-            #self.force_baseline_meca = False
-
-            #self.force_baseline_meca[0]
-        else:
-            
-            
-            torque = array([ft_data_meca.wrench.torque.x, ft_data_meca.wrench.torque.y, ft_data_meca.wrench.torque.z ])
-            
-            forces = array([ft_data_meca.wrench.force.x, ft_data_meca.wrench.force.y, ft_data_meca.wrench.force.z])
-
-            #print('forces are',forces)
-            #print('baseline forces are',self.force_baseline_meca)
-
-            #print('torques are',torque)
-            #print('baseline torques are',self.torque_baseline_meca)
-            self.force_norm = norm(self.force_baseline_meca - forces)
-            self.torque_norm = norm(self.torque_baseline_meca - torque)
-            #print('force norm is',force_norm)
-            #print('torque norm is',torque_norm)
-            
-
-            wrench_arr = hstack([[torque,forces]])
-            #print('wrench_arr - meca',wrench_arr)
-            J_Hess2 = pin.getFrameJacobian(self.rmodel, self.rdata, self.rmodel.getFrameId('tcp_meca'), pin.LOCAL_WORLD_ALIGNED)
-            force_polytope_verts = matmul(transpose(J_Hess2[0:3,6:]),transpose(wrench_arr))
-
+    
         
     def polytope_show_on_callback(self,show_bool):
         self.polytope_display = show_bool.data
@@ -1320,21 +1051,12 @@ class Geomagic2KUKA():
         self.thread_is_running = False
         print('Stopping thread')
     
-    #def plot_polytope(self,plot_polytope_geo):
+    
     
     def plot_polytope(self):
         
         
-        #while self.thread_is_running:
-        #    if self.polytope_display:
-
-                
-        
-        #input('cjeck joints input')
-        #print('I am plotting')
-                # # Compute for a single pair of collision
-        #if plot_polytope_geo.buttons[1]:  
-            # print('plotting ')          
+               
         while not rospy.is_shutdown():
             pin.updateGeometryPlacements(self.rmodel,self.rdata,self.geom_model,self.geom_data,self.q_in_numpy)
             pin.computeDistances(self.rmodel, self.rdata, self.geom_model, self.geom_data, self.q_in_numpy)
@@ -1498,15 +1220,6 @@ class Geomagic2KUKA():
             
 
 
-
-            # J_coll = get_constraint_obstacle_jacobian(J_Hess, self.obstacle_link_vector, 1)
-
-            
-            # polytope_verts_cmp_obs, polytope_faces_cmp_obs = cartesian_velocity_polytope(J_coll,self.qdot_max,qdot_min)
-            # polytope_verts_cmp_obs, polytope_faces_cmp_obs = cartesian_velocity_with_obstacle_polytope(J_Hess_obs, self.obstacle_link_vector, 1)
-
-            
-
             polytope_point_msg = PointStamped()
             polytope_point_msg.header = Header()
             polytope_point_msg.header.frame_id = 'telebot_cell_base_link'
@@ -1518,20 +1231,11 @@ class Geomagic2KUKA():
             #self.chebychev_msg.publish(polytope_point_msg)
 
             ef_pose = transpose(pos_act)
-            #ef_pose = transpose(polytope_center)
-            viz.display(self.q_in_numpy)
 
 
 
-            #print('ellipsoid ball is',ellipsoid_ball)
-            #input('stop now and see')
 
-            #print('polytope_verts',polytope_verts)
-            ########### Actual POlytope plot ###########################################################################
-            # Publish polytope faces
-            # polyArray_message = self.publish_velocity_polytope.publish(create_polytopes_msg(polytope_verts, polytope_faces, \
-            #                                                                                     ef_pose,"telebot_cell_base_link", scaling_factor))
-            
+
             polyArray_cmp_message = self.publish_velocity_cmp.publish(create_polytopes_msg(self.polytope_verts_cmp, self.polytope_faces_cmp, \
                                                                                                 ef_pose,"telebot_cell_base_link", scaling_factor))
             
@@ -1547,24 +1251,7 @@ class Geomagic2KUKA():
             end_ef_kuka_msg.header.frame_id = 'telebot_cell_base_link'
             end_ef_kuka_msg.header.stamp = rospy.Time.now()
 
-            # frame_info = self.rmodel.frames[self.grasp_frame_kuka_id]
-            # print(frame_info.placement.translation)
-
-            # pos_midpoiint = pin.Transform3f()
-            # pos_midpoiint[0] = midpoint[0]
-            # pos_midpoiint[1] = midpoint[1]
-            # pos_midpoiint[2] = midpoint[2]
-            #self.rmodel.frames[self.grasp_frame_kuka_id].positionInParentFrame()
-            #self.rdata.oMf[self.rmodel.getFrameId('grasp_frame_r1')]#*
-
-            # print('intermmediate frame is',self.grasp_frame_kuka_id)
-            # grasp_frame = self.rmodel.frames[self.grasp_frame_kuka_id].placement
             
-
-            
-
-
-            #print(grasp_frame)
             end_ef_kuka_msg.point.x = pos_act[0]
             end_ef_kuka_msg.point.y = pos_act[1]
             end_ef_kuka_msg.point.z = pos_act[2]
@@ -1642,63 +1329,6 @@ class Geomagic2KUKA():
 
     
 
-            # self.changing_state=False
-    def gripper_actuate_callback(self, change_gripper_states):
-
-                        # Gripper close here
-        gripper_msg = change_gripper_states
-        if (change_gripper_states.data):
-        # if (self.change_gripper_state and self.changing_state):
-            print("\n\n====================Changing state now===============\n\n")
-            if(self.gripper_closed):
-                print('Open Gripper')
-
-                self.kuka_digital_output_service(
-                    True, False, False, False, False, False, False, False)
-                rospy.sleep(0.75)
-                self.kuka_digital_output_service(
-                    False, False, False, False, False, False, False, False)
-                gripper_msg.data = False
-                self.meca_gripper_state_publisher.publish(change_gripper_states.data)
-                self.gripper_closed = False
-                print('Finish Open Gripper')
-            else:
-                print('Close Gripper')
-
-                # self.kuka_digital_output_service(False,False,False,False,False,False,False,False)
-                self.kuka_digital_output_service(
-                    False, True, False, False, False, False, False, False)
-                rospy.sleep(0.75)
-                self.kuka_digital_output_service(
-                    False, False, False, False, False, False, False, False)
-                
-                # Close mecademic gripper
-
-                self.meca_gripper_state_publisher.publish(change_gripper_states.data)
-                self.gripper_closed = True
-                print('Finish Close Gripper')
-            print('\n\n====================Changing state back to false===============\n\n')
-            
-
-
-    '''
-    def gripper_close_callback(self, gripper_states):
-        print("\n\n====================Trying to Close Gripper ===============\n\n")
-        if (gripper_states.data):
-            print("\n\n====================Closing Gripper ===============\n\n")
-
-            # self.kuka_digital_output_service(False,False,False,False,False,False,False,False)
-            self.kuka_digital_output_service(
-                True, False, False, False, False, False, False, False)
-            rospy.sleep(1.5)
-            self.kuka_digital_output_service(
-                False, False, False, False, False, False, False, False)
-            rospy.sleep(1.5)
-            # self.gripper_closed = True
-            print('Finish Close Gripper')
-
-            # self.changing_state=False
-    '''
     def meca_callback(self, meca_qin_joints):
         # Callback for getting current joint states of MECA
         mutex.acquire()
