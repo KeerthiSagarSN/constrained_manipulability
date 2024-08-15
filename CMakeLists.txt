@@ -19,8 +19,6 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 
-find_library(EIGEN_CDDLIB_LIB eigen-cddlib)
-
 
 add_service_files(
   FILES
@@ -28,24 +26,15 @@ add_service_files(
 )
 
 ## Generate messages in the 'msg' folder
- add_message_files(
-   FILES
-
-)
 
 
-generate_messages(
-  DEPENDENCIES
-  std_msgs
-  sensor_msgs
-  geometry_msgs
-)
+
 
 
 catkin_package(
   INCLUDE_DIRS include
   LIBRARIES constrained_manipulability
-  CATKIN_DEPENDS roscpp rospy message_runtime#  DEPENDS system_lib
+  CATKIN_DEPENDS rospy #  DEPENDS system_lib
 )
 
 ###########
@@ -64,8 +53,4 @@ endif()
 
 
 
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
-)
 
