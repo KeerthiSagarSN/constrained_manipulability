@@ -10,7 +10,7 @@ Constrained Manipulability is a library used to compute and vizualize a robot's 
 ### Dependencies
 - [ROS](http://wiki.ros.org/catkin) 
     - [pinnochio](https://index.ros.org/p/pinocchio/)
-    - [rospygradientpolytope](https://github.com/KeerthiSagarSN/rospygradientpolytope))
+    - [rospygradientpolytope](https://github.com/KeerthiSagarSN/rospygradientpolytope)
     - [eigenpy](https://index.ros.org/p/eigenpy/)
 - [example-robot-data](https://github.com/Gepetto/example-robot-data)
 - [pypoman](https://pypi.org/project/pypoman/)
