@@ -1572,7 +1572,8 @@ class Geomagic2KUKA():
 
 
         return -float64(pos_act_int2 - self.pos_reference)
-        
+
+    
 
     def constraint_function_Gamma(self, q_in):
 
