@@ -9,21 +9,21 @@ Constrained Manipulability is a library used to compute and vizualize a robot's 
 ## Installation 
 ### Dependencies
 - [ROS](http://wiki.ros.org/catkin) 
-    - [eigen_conversions](http://wiki.ros.org/eigen_conversions) 
-    - [geometric_shapes](http://wiki.ros.org/geometric_shapes)
-    - [pcl_ros](http://wiki.ros.org/pcl_ros)
-    - [kdl_parser](https://wiki.ros.org/kdl_parser)
-- [Eigen 3](https://eigen.tuxfamily.org/dox/GettingStarted.html)
-- [robot_collision_checking](https://github.com/philip-long/robot_collision_checking)
-- [eigen-cddlib](https://github.com/philip-long/eigen-cddlib)
-- [octomap_filter](https://github.com/mazrk7/octomap_filter)
+    - [pinnochio](https://index.ros.org/p/pinocchio/)
+    - [rospygradientpolytope](https://github.com/KeerthiSagarSN/rospygradientpolytope))
+    - [eigenpy](https://index.ros.org/p/eigenpy/)
+- [example-robot-data](https://github.com/Gepetto/example-robot-data)
+- [pypoman](https://pypi.org/project/pypoman/)
+
+
 
 
 ### Install instructions
 Clone repo into your current workspace as follows:
 ```
 cd catkin_ws/src
-git clone https://github.com/philip-long/constrained_manipulability.git
+git clone https://github.com/KeerthiSagarSN/constrained_manipulability.git
+git checkout noetic-python
 cd ..
 rosdep install -r --from-paths . --ignore-src --rosdistro $ROS_DISTRO -y
 catkin build
