@@ -1,0 +1,15 @@
+<launch>
+  <!-- Load URDF file path into a parameter -->
+  <arg name="urdf_file" default="/home/imr/.local/lib/python3.8/site-packages/cmeel.prefix/share/example-robot-data/robots/dual_robot_description/urdf/kuka_meca.urdf"/>
+  <!-- <arg name="urdf_file" default="$(find your_package_name)/urdf/your_robot.urdf"/> -->
+  <param name="robot_description" textfile="$(arg urdf_file)" />
+
+  <!-- Start robot_state_publisher to publish TF -->
+  <node name="robot_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher" />
+
+  <!-- Optionally, start joint_state_publisher if your robot has joints -->
+  <!-- <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" /> -->
+
+  <!-- If you want to visualize in RViz -->
+  <!-- <node name="rviz" pkg="rviz" type="rviz" args="-d $(find your_package_name)/rviz/urdf_config.rviz" /> -->
+</launch>
