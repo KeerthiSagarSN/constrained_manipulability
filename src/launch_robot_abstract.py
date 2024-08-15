@@ -1260,68 +1260,6 @@ class Geomagic2KUKA():
 
 
 
-    def rosbag_start_record_callback(self,start_rosbag_record):
-        if(start_rosbag_record.data):
-            try:
-                startRosbagRecordSrv = rospy.ServiceProxy('/data_recording/start_recording', Trigger, persistent=True)
-                resp2 = startRosbagRecordSrv()
-                
-
-                if resp2.success:
-                    print("Rosbag Start Recording Service started ")
-                    
-                    
-                    return resp2.success
-                else:
-                    print("Rosbag Start Recording Service Error ")
-                    return resp2.success
-
-                
-            except rospy.ServiceException:
-                print("Rosbag Start Recording Service call failed")
-    
-
-    def rosbag_stop_record_callback(self,stop_rosbag_record):
-        if(stop_rosbag_record.data):
-            try:
-                stopRosbagRecordSrv = rospy.ServiceProxy('/data_recording/stop_recording', Trigger, persistent=True)
-                resp3 = stopRosbagRecordSrv()
-                
-
-                if resp3.success:
-                    print("Rosbag Stop Recording Service started ")
-                    
-                    
-                    return resp3.success
-                else:
-                    print("Rosbag Stop Recording Service Error ")
-                    return resp3.success
-
-                
-            except rospy.ServiceException:
-                print("Rosbag Stop Recording Service call failed")
-
-    def button_robot_update_callback(self, geo_robot_buttons):
-
-        self.button_robot_state = [
-            geo_robot_buttons.buttons[0], geo_robot_buttons.buttons[1]]
-        #print('buttons: ', self.button_robot_state)
-
-    def kuka_digital_output_service(self, out1, out2, out3, out4, out5, out6, out7, out8):
-        # print('Deadly inside')
-        rospy.wait_for_service(
-            '/kuka_hardware_interface/write_8_digital_outputs', timeout=None)
-        print('I crossed timeout')
-        try:
-            write_8_outputs_func = rospy.ServiceProxy(
-                '/kuka_hardware_interface/write_8_digital_outputs', write_8_outputs, persistent=True)
-            resp1 = write_8_outputs_func(out1, out2, out3, out4, out5, out6, out7, out8)
-            print("I have actuated it ")
-            return resp1
-            # rospy.spin()
-            # resp1 = write_8_bool_outputs_resp(False,False,False,False,False,False,False,False)
-        except rospy.ServiceException:
-            print("Service call failed: KUKA_Digital_outputs")
 
     def collision_state_callback(self, collision_state):
         self.current_collision_state = collision_state.data
